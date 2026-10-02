@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Daniel Staszak — Trener personalny</title>
+  <meta name="description" content="Daniel Staszak — trener personalny i kulturysta. 15 lat na siłowni. Prowadzenie online, treningi personalne 1:1 i konsultacje.">
+  <meta name="theme-color" content="#0b0b0c">
+  <meta name="color-scheme" content="dark">
+
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+  <!-- Podgląd linku (Instagram, Messenger, WhatsApp…).
+       Po podpięciu domeny zmień og:url i og:image na pełne adresy, np. https://twojadomena.pl/assets/img/og-image.png -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pl_PL">
+  <meta property="og:title" content="Daniel Staszak — Trener personalny">
+  <meta property="og:description" content="15 lat na siłowni. Prowadzenie online, treningi 1:1, konsultacje.">
+  <meta property="og:image" content="assets/img/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preload" href="assets/fonts/oswald-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <noscript><style>.loader, .redirect, .share { display: none !important; } body.is-loading { overflow: auto; } body.is-loading .reveal { opacity: 1; }</style></noscript>
+
+  <script src="assets/js/config.js" defer></script>
+  <script src="assets/js/figures.js" defer></script>
+  <script src="assets/js/main.js" defer></script>
+</head>
+<body class="is-loading">
+
+  <!-- ===== Ekran ładowania: ludzik podnoszący sztangę ===== -->
+  <div class="loader" id="loader" role="status" aria-live="polite" aria-label="Ładowanie strony">
+    <div class="loader__stage">
+      <svg class="figure figure--lifter" id="lifter" viewBox="0 0 200 200" aria-hidden="true"></svg>
+    </div>
+    <p class="loader__label"><span id="loaderLabel">Rozgrzewka</span><span class="loader__dots"></span></p>
+    <div class="loader__bar"><span id="loaderBar"></span></div>
+    <p class="loader__hint">Dotknij, aby pominąć</p>
+  </div>
+
+  <!-- ===== Tło ===== -->
+  <div class="bg" aria-hidden="true">
+    <div class="bg__glow"></div>
+    <div class="bg__knurl"></div>
+    <div class="bg__grain"></div>
+  </div>
+
+  <button class="share" id="shareBtn" type="button" aria-label="Udostępnij stronę">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+  </button>
+
+  <main class="page">
+    <section class="hero reveal">
+      <div class="avatar">
+        <div class="avatar__ring"></div>
+        <div class="avatar__inner" id="avatar"><span class="avatar__mono">DS</span></div>
+      </div>
+
+      <p class="status" id="status"><span class="status__dot"></span><span id="statusText">Przyjmuję nowych podopiecznych</span></p>
+
+      <h1 class="name"><span id="firstName">Daniel</span> <span class="name__accent" id="lastName">Staszak</span></h1>
+      <p class="role" id="role">Trener personalny · Kulturysta</p>
+      <p class="bio" id="bio">15 lat na siłowni. Zjadłem na niej zęby — teraz pomagam Ci zbudować formę bez dróg na skróty.</p>
+
+      <ul class="socials" id="socials" aria-label="Media społecznościowe"></ul>
+    </section>
+
+    <ul class="stats reveal" id="stats"></ul>
+
+    <nav class="links" id="links" aria-label="Linki"></nav>
+
+    <noscript>
+      <p class="noscript">Włącz JavaScript, aby zobaczyć wszystkie linki — albo odwiedź
+        <a href="https://www.instagram.com/danielstaszak_/">Instagram @danielstaszak_</a>.</p>
+    </noscript>
+
+    <figure class="motto reveal">
+      <svg class="motto__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>
+      <blockquote id="motto">Forma nie bierze się z motywacji. Bierze się z powtórzeń.</blockquote>
+    </figure>
+
+    <footer class="footer reveal">
+      <p>© <span id="year">2026</span> <span id="footerName">Daniel Staszak</span></p>
+      <p class="footer__sub" id="footerText">Trener personalny · Kulturysta</p>
+    </footer>
+  </main>
+
+  <!-- ===== Przekierowanie: uginanie przedramion z hantlem ===== -->
+  <div class="redirect" id="redirect" aria-hidden="true">
+    <div class="redirect__stage">
+      <svg class="figure figure--curler" id="curler" viewBox="28 28 150 158" aria-hidden="true"></svg>
+    </div>
+    <p class="redirect__label">Przechodzisz do</p>
+    <p class="redirect__title" id="redirectTitle">Instagram</p>
+    <div class="redirect__bar"><span id="redirectBar"></span></div>
+    <button class="redirect__cancel" id="redirectCancel" type="button">Anuluj</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
