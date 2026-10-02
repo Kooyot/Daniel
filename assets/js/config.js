@@ -15,7 +15,7 @@ window.SITE_CONFIG = {
     role: "Trener personalny · Kulturysta",
     bio: "15 lat na siłowni. Zjadłem na niej zęby — teraz pomagam Ci zbudować formę bez dróg na skróty.",
     // Ścieżka do zdjęcia, np. "assets/img/daniel.jpg". Puste = monogram „DS”.
-    avatar: "",
+    avatar: "assets/img/daniel.jpg",
     status: { show: true, text: "Przyjmuję nowych podopiecznych" },
   },
 
