@@ -277,6 +277,7 @@
   var w3f = cfg.web3forms || {};
   var forms = cfg.forms || {};
   var guard = cfg.antispam || {};
+  var api = cfg.api || {};
   var built = {};
   var uid = 0;
   var inlineKey = $("kontakt") ? $("kontakt").getAttribute("data-form") : "";
@@ -523,9 +524,9 @@
     }
 
     function refresh() {
+      if (!done.hidden) return; // ekran „wysłane” zostaje — blokada dotyczy kolejnych prób
       var lock = guardEnabled() && readLock();
       if (lock) { showLocked(lock); return; }
-      if (!done.hidden) return;
       if (locked.hidden === false) show(form);
       shownAt = Date.now();
     }
@@ -602,44 +603,95 @@
         show(done);
         return;
       }
-      if (!w3f.accessKey) {
-        setError(reviewError, "Formularz będzie aktywny już wkrótce — napisz na Instagramie 💪");
-        return;
-      }
-
-      var data = { Formularz: def.title };
-      Object.keys(pending).forEach(function (k) { data[k] = pending[k]; });
-      data.access_key = w3f.accessKey;
-      data.subject = fillTemplate(def.subject || "Nowa wiadomość ze strony — {name}", data);
-      data.from_name = w3f.fromName || document.title;
-      if (data.email) data.replyto = data.email;
-
       btn.classList.add("is-sending");
       btn.disabled = true;
 
-      fetch(form.action, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(data),
-      })
-        .then(function (r) { return r.json().catch(function () { return {}; }); })
-        .then(function (res) {
-          if (!res.success) throw new Error(res.message || "error");
-          if (guardEnabled()) writeLock(def.title);
-          form.reset();
-          form.classList.remove("was-validated");
-          pending = null;
-          show(done);
-          done.focus({ preventScroll: true });
-          refreshAll();
+      function finish() {
+        btn.classList.remove("is-sending");
+        btn.disabled = false;
+      }
+
+      function success() {
+        if (guardEnabled()) writeLock(def.title);
+        form.reset();
+        form.classList.remove("was-validated");
+        pending = null;
+        show(done);
+        done.focus({ preventScroll: true });
+        refreshAll();
+      }
+
+      function failed(msg) {
+        setError(reviewError, msg || "Nie udało się wysłać. Spróbuj ponownie za chwilę albo napisz na Instagramie.");
+      }
+
+      // Zapas: Web3Forms (gdy nasz serwer nie odpowiada).
+      function sendWeb3Forms() {
+        if (!w3f.accessKey) return Promise.reject(new Error("no key"));
+        var data = { Formularz: def.title };
+        Object.keys(pending).forEach(function (k) { data[k] = pending[k]; });
+        data.access_key = w3f.accessKey;
+        data.subject = fillTemplate(def.subject || "Nowa wiadomość ze strony — {name}", data);
+        data.from_name = w3f.fromName || document.title;
+        if (data.email) data.replyto = data.email;
+        return fetch(form.action, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(data),
         })
-        .catch(function () {
-          setError(reviewError, "Nie udało się wysłać. Spróbuj ponownie za chwilę albo napisz na Instagramie.");
-        })
-        .then(function () {
-          btn.classList.remove("is-sending");
-          btn.disabled = false;
+          .then(function (r) { return r.json().catch(function () { return {}; }); })
+          .then(function (res) { if (!res.success) throw new Error(res.message || "error"); });
+      }
+
+      // Główna droga: nasz serwer (zapis w panelu, limit po IP / e-mailu / telefonie).
+      function sendApi() {
+        var answers = [];
+        Object.keys(pending).forEach(function (k) {
+          if (k === "name" || k === "email" || k === "Telefon") return;
+          answers.push({ label: k, value: pending[k] });
         });
+        return fetch(api.submit, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            form: key,
+            name: pending.name || "",
+            email: pending.email || "",
+            phone: pending.Telefon || "",
+            answers: answers,
+            website: trap.value,
+            elapsed: Date.now() - shownAt,
+          }),
+        }).then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (res) {
+            return { status: r.status, body: res };
+          });
+        });
+      }
+
+      var viaWeb3Forms = function () {
+        return sendWeb3Forms().then(success, function () { failed(); });
+      };
+
+      if (!api.submit) {
+        viaWeb3Forms().then(finish);
+        return;
+      }
+
+      sendApi()
+        .then(function (r) {
+          if (r.status === 200 && r.body.ok) return success();
+          if (r.body.error === "limit") {
+            writeLock(def.title);
+            var lock = readLock() || { t: r.body.at || Date.now(), form: def.title };
+            if (r.body.at) lock.t = r.body.at;
+            showLocked(lock);
+            return;
+          }
+          if (r.status === 400 || r.status === 429) return failed(r.body.message);
+          return viaWeb3Forms(); // 404 / 5xx — serwer formularzy jeszcze nie działa
+        }, viaWeb3Forms)
+        .then(finish);
     });
 
     function prefill(data) {

@@ -9,7 +9,7 @@
 #      (pozostałe strony zostają bez zmian; ponowne uruchomienie podmienia tylko ten blok),
 #   3. sprawdza konfigurację — przy błędzie przywraca kopię i niczego nie przeładowuje,
 #   4. przeładowuje Caddy (bez restartu, inne strony działają dalej),
-#   5. włącza automatyczne pobieranie zmian z GitHuba co 2 minuty.
+#   5. włącza automatyczne aktualizacje co 2 minuty (deploy/update.sh: strona, Caddy, backend panelu).
 set -euo pipefail
 
 DOMAIN="${1:-}"
@@ -79,7 +79,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/git -C $SITE pull --ff-only --quiet
+ExecStart=/usr/bin/bash $SITE/deploy/update.sh
 UNIT
 cat > /etc/systemd/system/daniel-update.timer <<UNIT
 [Unit]
@@ -94,6 +94,7 @@ WantedBy=timers.target
 UNIT
 systemctl daemon-reload
 systemctl enable --now daniel-update.timer >/dev/null
+echo "$DOMAIN" > /etc/daniel-domain
 
 echo ""
 echo "GOTOWE: strona ustawiona dla https://$DOMAIN (oraz www.$DOMAIN → $DOMAIN)."

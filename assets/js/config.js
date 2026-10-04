@@ -88,6 +88,12 @@ window.SITE_CONFIG = {
     placeholder: "Napisz krótko, o co chodzi…",
   },
 
+  // Serwer formularzy na Hetznerze (zapis w panelu Daniela, limit po IP / e-mailu / telefonie).
+  // Gdy nie odpowiada, formularze awaryjnie wysyłają zgłoszenie przez Web3Forms (poniżej).
+  api: {
+    submit: "/api/submit",
+  },
+
   // Formularze (Web3Forms — zgłoszenia trafiają na e-mail podpięty w Web3Forms).
   // accessKey: klucz z https://web3forms.com (jest publiczny, może być w kodzie).
   web3forms: {
