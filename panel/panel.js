@@ -23,6 +23,7 @@
     dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
     calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
     inbox: '<path d="M4 13l2.5-8h11L20 13v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   };
   var FORM_ICON = { online: "clipboard", treningi: "dumbbell", konsultacja: "calendar" };
 
@@ -179,6 +180,106 @@
     return box;
   }
 
+  /* ---------------- Powiadomienia push ---------------- */
+  function pushSupported() {
+    return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  }
+
+  function keyToBytes(b64) {
+    var pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function currentSub() {
+    return navigator.serviceWorker.ready.then(function (r) { return r.pushManager.getSubscription(); });
+  }
+
+  // stan na tym urządzeniu: on | off | denied | ios-install | unsupported
+  function pushState() {
+    if (!pushSupported()) return Promise.resolve(isIOS && !isInstalled() ? "ios-install" : "unsupported");
+    if (Notification.permission === "denied") return Promise.resolve("denied");
+    return currentSub().then(function (sub) {
+      return sub && Notification.permission === "granted" ? "on" : "off";
+    }, function () { return "off"; });
+  }
+
+  function enablePush() {
+    // requestPermission musi być wywołane od razu po stuknięciu (wymóg iOS)
+    return Notification.requestPermission().then(function (perm) {
+      if (perm !== "granted") {
+        throw new Error(perm === "denied" ? "Powiadomienia są zablokowane w ustawieniach telefonu." : "Nie włączono powiadomień.");
+      }
+      return Promise.all([api("panel/push"), navigator.serviceWorker.ready]);
+    }).then(function (res) {
+      var reg = res[1];
+      return reg.pushManager.getSubscription().then(function (sub) {
+        return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyToBytes(res[0].publicKey) });
+      });
+    }).then(function (sub) {
+      return api("panel/push/subscribe", { method: "POST", body: { subscription: sub.toJSON() } });
+    });
+  }
+
+  function disablePush() {
+    return currentSub().then(function (sub) {
+      if (!sub) return null;
+      var endpoint = sub.endpoint;
+      return sub.unsubscribe().then(function () {
+        return api("panel/push/unsubscribe", { method: "POST", body: { endpoint: endpoint } });
+      });
+    });
+  }
+
+  function renderPushCard(holder) {
+    pushState().then(function (st) {
+      holder.textContent = "";
+      if (st === "unsupported") return;
+      var box = el("div", "notif notif--" + st);
+      var ic = el("span", "notif__icon");
+      ic.innerHTML = icon("bell");
+      var text = el("div", "notif__text");
+      var actions = el("div", "notif__actions");
+      box.appendChild(ic);
+      box.appendChild(text);
+      box.appendChild(actions);
+
+      if (st === "on") {
+        text.appendChild(el("strong", null, "Powiadomienia włączone"));
+        text.appendChild(el("span", null, "na tym urządzeniu"));
+        actions.appendChild(btn("notif__btn notif__btn--ghost", "Test", null, function () {
+          api("panel/push/test", { method: "POST" })
+            .then(function (r) { toast(r.sent ? "Wysłano — powiadomienie za chwilę" : "Brak urządzeń do powiadomień"); })
+            .catch(fail);
+        }));
+        actions.appendChild(btn("notif__btn notif__btn--ghost", "Wyłącz", null, function () {
+          disablePush().then(function () { toast("Powiadomienia wyłączone"); renderPushCard(holder); }).catch(fail);
+        }));
+      } else if (st === "off") {
+        text.appendChild(el("strong", null, "Włącz powiadomienia"));
+        text.appendChild(el("span", null, "Telefon da znać o każdym nowym zgłoszeniu."));
+        var on = btn("notif__btn", "Włącz", null, function () {
+          on.disabled = true;
+          enablePush()
+            .then(function () { toast("Powiadomienia włączone 🔔"); renderPushCard(holder); })
+            .catch(function (err) { fail(err); renderPushCard(holder); });
+        });
+        actions.appendChild(on);
+      } else if (st === "denied") {
+        text.appendChild(el("strong", null, "Powiadomienia są zablokowane"));
+        text.appendChild(el("span", null, isIOS
+          ? "Ustawienia → Powiadomienia → Panel DS → Zezwalaj."
+          : "Ustawienia telefonu → Aplikacje → Panel DS (albo Chrome) → Powiadomienia."));
+      } else if (st === "ios-install") {
+        text.appendChild(el("strong", null, "Powiadomienia na iPhonie"));
+        text.appendChild(el("span", null, "Najpierw dodaj panel do ekranu początkowego (Udostępnij → Do ekranu początkowego), otwórz go z ikony i włącz tutaj powiadomienia."));
+      }
+      holder.appendChild(box);
+    });
+  }
+
   /* ---------------- Logowanie ---------------- */
   function renderLogin() {
     app.textContent = "";
@@ -261,6 +362,9 @@
 
     var banner = installBanner();
     if (banner) app.appendChild(banner);
+    var notif = el("div");
+    app.appendChild(notif);
+    renderPushCard(notif);
 
     if (!state.mail) {
       app.appendChild(el("p", "panel-warn", "Wysyłka maili nie jest skonfigurowana — odpowiedzi z panelu nie zadziałają. Uruchom na serwerze deploy/setup-panel.sh."));

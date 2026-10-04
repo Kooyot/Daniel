@@ -249,3 +249,41 @@
   line-height: 1;
 }
 .install__btn:focus-visible, .install__close:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ---------- Powiadomienia ---------- */
+.notif {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.notif--off { border-color: rgba(217, 168, 78, 0.4); background: linear-gradient(180deg, rgba(217, 168, 78, 0.12), rgba(217, 168, 78, 0.04)); }
+.notif--denied { border-color: rgba(248, 113, 113, 0.3); }
+.notif__icon {
+  flex: none;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  background: rgba(217, 168, 78, 0.12);
+  color: var(--gold);
+}
+.notif__icon svg { width: 20px; height: 20px; }
+.notif--on .notif__icon { color: var(--live); background: rgba(74, 222, 128, 0.1); }
+.notif__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.notif__text strong { font-size: 0.9rem; }
+.notif__text span { font-size: 0.78rem; color: var(--muted); }
+.notif__actions { display: flex; gap: 6px; }
+.notif__btn {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--grad-gold);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+.notif__btn:disabled { opacity: 0.6; }
+.notif__btn--ghost { background: transparent; color: var(--muted); border: 1px solid var(--line-2); font-weight: 500; }
+.notif__btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
