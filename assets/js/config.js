@@ -28,7 +28,7 @@ window.SITE_CONFIG = {
 
   socials: [
     { icon: "instagram", label: "Instagram", url: "https://www.instagram.com/danielstaszak_/" },
-    { icon: "tiktok", label: "TikTok", url: "#" },
+    { icon: "tiktok", label: "TikTok", url: "https://www.tiktok.com/@danielstaszak_" },
     { icon: "youtube", label: "YouTube", url: "#" },
     { icon: "facebook", label: "Facebook", url: "#" },
     { icon: "mail", label: "E-mail", url: "#" },
@@ -64,7 +64,7 @@ window.SITE_CONFIG = {
       icon: "instagram",
       url: "https://www.instagram.com/danielstaszak_/",
     },
-    { title: "TikTok", subtitle: "Krótkie porady treningowe", icon: "tiktok", url: "#" },
+    { title: "TikTok", subtitle: "@danielstaszak_ · krótkie porady treningowe", icon: "tiktok", url: "https://www.tiktok.com/@danielstaszak_" },
     { title: "YouTube", subtitle: "Pełne treningi i vlogi", icon: "youtube", url: "#" },
 
     { type: "heading", text: "Kontakt" },
