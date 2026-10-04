@@ -69,19 +69,24 @@ window.SITE_CONFIG = {
 
     { type: "heading", text: "Kontakt" },
     {
-      title: "Napisz e-mail",
-      subtitle: "kontakt@danielstaszak.pl",
-      icon: "mail",
-      url: "mailto:kontakt@danielstaszak.pl?subject=Wiadomo%C5%9B%C4%87%20ze%20strony", // otwiera program pocztowy
-    },
-    {
-      title: "Napisz na Instagramie",
-      subtitle: "Wiadomość prywatna do @danielstaszak_",
-      icon: "instagram",
-      url: "https://ig.me/m/danielstaszak_", // otwiera czat (DM) z Danielem
-      redirectLabel: "Instagram · wiadomość", // napis na ekranie przejścia
+      title: "Napisz do mnie",
+      subtitle: "Współpraca, pytania · e-mail lub DM na Instagramie",
+      icon: "chat",
+      url: "#napisz", // otwiera okno kontaktu (ustawienia w contact poniżej)
     },
   ],
+
+  // Okno „Napisz do mnie”: temat + wiadomość, wysyłka z własnego maila albo w DM na Instagramie.
+  // Nic nie przechodzi przez stronę — otwiera się program pocztowy albo czat na Instagramie.
+  contact: {
+    key: "napisz", // adres: twojadomena.pl/#napisz
+    title: "Napisz do mnie",
+    subtitle: "Współpraca, reklama albo pytanie? Napisz, jak Ci wygodniej — odpowiadam na każdą wiadomość.",
+    email: "kontakt@danielstaszak.pl",
+    instagram: "danielstaszak_",
+    topics: ["Współpraca / reklama", "Pytanie", "Inne"],
+    placeholder: "Napisz krótko, o co chodzi…",
+  },
 
   // Formularze (Web3Forms — zgłoszenia trafiają na e-mail podpięty w Web3Forms).
   // accessKey: klucz z https://web3forms.com (jest publiczny, może być w kodzie).

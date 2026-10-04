@@ -17,7 +17,12 @@ __DOMAIN__ {
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
 	}
-	header /assets/* Cache-Control "public, max-age=3600"
+	# strona, skrypty i style zawsze sprawdzane na serwerze (po zmianie od razu nowa wersja),
+	# zdjęcia i fonty z dłuższą pamięcią podręczną
+	@code path / *.html *.js *.css
+	header @code Cache-Control "no-cache"
+	header /assets/img/* Cache-Control "public, max-age=86400"
+	header /assets/fonts/* Cache-Control "public, max-age=2592000"
 
 	file_server
 }
