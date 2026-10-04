@@ -259,6 +259,11 @@
       toast("Ten link już wkrótce 💪");
       return;
     }
+    if (url.charAt(0) === "#") {
+      e.preventDefault();
+      if (!scrollToHash(url)) toast("Ten link już wkrótce 💪");
+      return;
+    }
     var rc = cfg.redirect || {};
     if (rc.enabled === false || a.target === "_blank") return;
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
@@ -266,6 +271,122 @@
 
     e.preventDefault();
     showRedirect(a.dataset.title, a.href);
+  }
+
+  /* ------------------------ Formularz kontaktowy --------------------- */
+  var contact = cfg.contact || {};
+
+  function contactEnabled() {
+    return contact.show !== false && !!$("kontakt");
+  }
+
+  function renderContact() {
+    var section = $("kontakt");
+    if (!section) return;
+    if (!contactEnabled()) { section.remove(); return; }
+
+    setText("contactHeading", contact.heading);
+    setText("contactTitle", contact.title);
+    setText("contactSub", contact.subtitle);
+    setText("contactDoneTitle", contact.successTitle);
+    setText("contactDoneText", contact.successText);
+    $("contactKey").value = contact.accessKey || "";
+
+    var box = $("contactTopics");
+    var topics = contact.topics || [];
+    if (!topics.length) { box.remove(); return; }
+    topics.forEach(function (t, n) {
+      var label = make("label", "chip");
+      var input = make("input");
+      input.type = "radio";
+      input.name = "topic";
+      input.value = t;
+      if (n === 0) input.checked = true;
+      label.appendChild(input);
+      label.appendChild(make("span", null, t));
+      box.appendChild(label);
+    });
+  }
+
+  function fillTemplate(tpl, data) {
+    return String(tpl || "").replace(/\{(\w+)\}/g, function (_, k) { return data[k] || ""; }).replace(/\s+—\s*$/, "");
+  }
+
+  function setContactError(msg) {
+    var box = $("contactError");
+    box.textContent = msg || "";
+    box.hidden = !msg;
+  }
+
+  function onContactSubmit(e) {
+    e.preventDefault();
+    var form = e.currentTarget;
+    if (form.classList.contains("is-sending")) return;
+    setContactError("");
+
+    var invalid = form.querySelector(".field__input:invalid");
+    form.classList.add("was-validated");
+    if (invalid) {
+      invalid.focus();
+      setContactError(invalid.type === "email" && invalid.value ? "Sprawdź adres e-mail." : "Uzupełnij zaznaczone pola.");
+      return;
+    }
+    if (!contact.accessKey) {
+      setContactError("Formularz będzie aktywny już wkrótce — napisz na Instagramie 💪");
+      return;
+    }
+
+    var fd = new FormData(form);
+    if (fd.get("botcheck")) return;
+    var data = {};
+    fd.forEach(function (v, k) { data[k] = typeof v === "string" ? v.trim() : v; });
+    delete data.botcheck;
+    data.access_key = contact.accessKey;
+    data.subject = fillTemplate(contact.emailSubject || "Nowa wiadomość ze strony", data);
+    data.from_name = contact.emailFromName || document.title;
+    data.replyto = data.email;
+
+    form.classList.add("is-sending");
+    $("contactSubmit").disabled = true;
+
+    fetch(form.action, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (res) {
+        if (!res.success) throw new Error(res.message || "error");
+        form.hidden = true;
+        var done = $("contactDone");
+        done.hidden = false;
+        done.focus({ preventScroll: true });
+        form.reset();
+        form.classList.remove("was-validated");
+        var first = form.querySelector('input[name="topic"]');
+        if (first) first.checked = true;
+      })
+      .catch(function () {
+        setContactError("Nie udało się wysłać. Spróbuj ponownie za chwilę albo napisz na Instagramie.");
+      })
+      .then(function () {
+        form.classList.remove("is-sending");
+        $("contactSubmit").disabled = false;
+      });
+  }
+
+  function contactAgain() {
+    $("contactDone").hidden = true;
+    var form = $("contactForm");
+    form.hidden = false;
+    form.querySelector('input[name="name"]').focus();
+  }
+
+  function scrollToHash(hash) {
+    var target = document.getElementById(hash.slice(1));
+    if (!target) return false;
+    target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    return true;
   }
 
   /* ---------------------------- Udostępnij --------------------------- */
@@ -290,7 +411,13 @@
   renderStats();
   renderSocials();
   renderLinks();
+  renderContact();
   runLoader();
+
+  if (contactEnabled()) {
+    $("contactForm").addEventListener("submit", onContactSubmit);
+    $("contactAgain").addEventListener("click", contactAgain);
+  }
 
   document.addEventListener("click", onLinkClick);
   $("redirectCancel").addEventListener("click", hideRedirect);
