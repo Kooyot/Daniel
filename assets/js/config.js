@@ -71,9 +71,27 @@ window.SITE_CONFIG = {
       title: "Napisz do mnie",
       subtitle: "Odpowiadam na każdą wiadomość",
       icon: "mail",
-      url: "#", // np. "mailto:kontakt@twojadomena.pl"
+      url: "#kontakt", // przewija do formularza poniżej
     },
   ],
+
+  // Formularz kontaktowy (Web3Forms — wiadomości trafiają na Twój e-mail).
+  // accessKey: klucz z https://web3forms.com (jest publiczny, można go tu wpisać).
+  // Puste accessKey = formularz widoczny, ale wysyłka jeszcze nieaktywna.
+  // show: false = formularz całkowicie ukryty.
+  contact: {
+    show: true,
+    accessKey: "",
+    heading: "Formularz",
+    title: "Napisz do mnie",
+    subtitle: "Odpowiadam na każdą wiadomość",
+    topics: ["Prowadzenie online", "Treningi 1:1", "Konsultacja", "Inne"],
+    // Temat maila, który dostaniesz. {topic} i {name} zostaną podmienione.
+    emailSubject: "Nowe zgłoszenie: {topic} — {name}",
+    emailFromName: "Strona Daniel Staszak",
+    successTitle: "Wiadomość wysłana!",
+    successText: "Dzięki — odezwę się najszybciej, jak to możliwe.",
+  },
 
   motto: "Forma nie bierze się z motywacji. Bierze się z powtórzeń.",
   footer: "Trener personalny · Kulturysta",
