@@ -111,6 +111,74 @@
     return kind + ":" + digits;
   }
 
+  /* ---------------- Instalacja jako aplikacja (Android / iPhone) ---------------- */
+  var installPrompt = null;
+  var ua = navigator.userAgent;
+  var isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  var isAndroid = /android/i.test(ua);
+
+  function isInstalled() {
+    return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  }
+
+  function installDismissed() {
+    try { return localStorage.getItem("ds-install-hide") === "1"; } catch (e) { return false; }
+  }
+
+  // Android (Chrome, Samsung Internet, Edge): systemowe okno instalacji na nasz przycisk
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    installPrompt = e;
+    if (app.querySelector(".subs")) renderList();
+  });
+  window.addEventListener("appinstalled", function () {
+    installPrompt = null;
+    toast("Aplikacja zainstalowana ✔");
+    var b = app.querySelector(".install");
+    if (b) b.remove();
+  });
+
+  function installBanner() {
+    if (isInstalled() || installDismissed()) return null;
+    if (!installPrompt && !isIOS && !isAndroid) return null;
+    var box = el("div", "install");
+    var ic = el("span", "install__icon");
+    var img = el("img");
+    img.src = "icons/icon-192.png";
+    img.alt = "";
+    ic.appendChild(img);
+    var text = el("div", "install__text");
+    text.appendChild(el("strong", null, "Zainstaluj panel jako aplikację"));
+    var how;
+    if (installPrompt) how = "Ikona na ekranie telefonu, pełny ekran — jak zwykła aplikacja.";
+    else if (isIOS) how = "W Safari stuknij Udostępnij ⬆️, potem „Do ekranu początkowego”.";
+    else how = "W Chrome otwórz menu ⋮ i wybierz „Zainstaluj aplikację” albo „Dodaj do ekranu głównego”.";
+    text.appendChild(el("span", null, how));
+    box.appendChild(ic);
+    box.appendChild(text);
+    var actions = el("div", "install__actions");
+    if (installPrompt) {
+      actions.appendChild(btn("install__btn", "Zainstaluj", null, function () {
+        var pr = installPrompt;
+        installPrompt = null;
+        pr.prompt();
+        pr.userChoice.then(function (c) {
+          if (c.outcome !== "accepted") installPrompt = null;
+          renderList();
+        });
+      }));
+    }
+    var close = btn("install__close", null, null, function () {
+      try { localStorage.setItem("ds-install-hide", "1"); } catch (e) { /* tryb prywatny */ }
+      box.remove();
+    });
+    close.setAttribute("aria-label", "Ukryj");
+    close.textContent = "×";
+    actions.appendChild(close);
+    box.appendChild(actions);
+    return box;
+  }
+
   /* ---------------- Logowanie ---------------- */
   function renderLogin() {
     app.textContent = "";
@@ -190,6 +258,9 @@
     logout.setAttribute("aria-label", "Wyloguj");
     var avatar = el("div", "topbar__logo", "DS");
     app.appendChild(topbar("Zgłoszenia", avatar, [refresh, logout]));
+
+    var banner = installBanner();
+    if (banner) app.appendChild(banner);
 
     if (!state.mail) {
       app.appendChild(el("p", "panel-warn", "Wysyłka maili nie jest skonfigurowana — odpowiedzi z panelu nie zadziałają. Uruchom na serwerze deploy/setup-panel.sh."));
