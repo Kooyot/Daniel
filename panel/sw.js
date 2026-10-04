@@ -1,6 +1,6 @@
 // Service worker panelu: pozwala zainstalować panel jako aplikację.
 // Celowo nie zapisuje danych zgłoszeń w pamięci urządzenia — zawsze pobiera je z serwera.
-const SHELL = "panel-shell-v1";
+const SHELL = "panel-shell-v2";
 const FILES = ["./", "panel.css", "panel.js", "manifest.webmanifest", "icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
