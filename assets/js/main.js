@@ -261,7 +261,7 @@
     }
     if (url.charAt(0) === "#") {
       e.preventDefault();
-      if (!scrollToHash(url)) toast("Ten link już wkrótce 💪");
+      if (!openSheet(url.slice(1)) && !scrollToHash(url)) toast("Ten link już wkrótce 💪");
       return;
     }
     var rc = cfg.redirect || {};
@@ -273,113 +273,249 @@
     showRedirect(a.dataset.title, a.href);
   }
 
-  /* ------------------------ Formularz kontaktowy --------------------- */
-  var contact = cfg.contact || {};
+  /* ----------------------------- Formularze -------------------------- */
+  var w3f = cfg.web3forms || {};
+  var forms = cfg.forms || {};
+  var built = {};
+  var uid = 0;
+  var inlineKey = $("kontakt") ? $("kontakt").getAttribute("data-form") : "";
 
-  function contactEnabled() {
-    return contact.show !== false && !!$("kontakt");
-  }
+  var CHECK_SVG = '<svg class="contact__check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="m15 27 7.5 7.5L38 19"/></svg>';
 
-  function renderContact() {
-    var section = $("kontakt");
-    if (!section) return;
-    if (!contactEnabled()) { section.remove(); return; }
+  function fieldName(f) { return f.key || f.label; }
 
-    setText("contactHeading", contact.heading);
-    setText("contactTitle", contact.title);
-    setText("contactSub", contact.subtitle);
-    setText("contactDoneTitle", contact.successTitle);
-    setText("contactDoneText", contact.successText);
-    $("contactKey").value = contact.accessKey || "";
-
-    var box = $("contactTopics");
-    var topics = contact.topics || [];
-    if (!topics.length) { box.remove(); return; }
-    topics.forEach(function (t, n) {
+  function buildChoice(f) {
+    var box = make("fieldset", "contact__topics");
+    box.appendChild(make("legend", "contact__label", f.label));
+    (f.options || []).forEach(function (opt, n) {
       var label = make("label", "chip");
       var input = make("input");
-      input.type = "radio";
-      input.name = "topic";
-      input.value = t;
-      if (n === 0) input.checked = true;
+      input.type = f.type === "multi" ? "checkbox" : "radio";
+      input.name = fieldName(f);
+      input.value = opt;
+      if (f.type !== "multi" && n === 0) input.checked = input.defaultChecked = true;
       label.appendChild(input);
-      label.appendChild(make("span", null, t));
+      label.appendChild(make("span", null, opt));
       box.appendChild(label);
     });
+    return box;
+  }
+
+  function buildInput(f) {
+    var label = make("label", "field" + (f.half ? " field--half" : ""));
+    var cap = make("span", "contact__label", f.label);
+    if (!f.required) {
+      cap.appendChild(document.createTextNode(" "));
+      cap.appendChild(make("em", null, "(opcjonalnie)"));
+    }
+    var isText = f.type === "textarea";
+    var input = make(isText ? "textarea" : "input", "field__input");
+    if (isText) input.rows = f.rows || 4;
+    else input.type = f.type || "text";
+    input.name = fieldName(f);
+    input.required = !!f.required;
+    input.maxLength = isText ? 3000 : 120;
+    if (f.placeholder) input.placeholder = f.placeholder;
+    if (f.autocomplete) input.autocomplete = f.autocomplete;
+    label.appendChild(cap);
+    label.appendChild(input);
+    return label;
   }
 
   function fillTemplate(tpl, data) {
-    return String(tpl || "").replace(/\{(\w+)\}/g, function (_, k) { return data[k] || ""; }).replace(/\s+—\s*$/, "");
+    return String(tpl || "")
+      .replace(/\{([^}]+)\}/g, function (_, k) { return data[k] || ""; })
+      .replace(/\s+—\s*$/, "");
   }
 
-  function setContactError(msg) {
-    var box = $("contactError");
-    box.textContent = msg || "";
-    box.hidden = !msg;
-  }
+  function buildForm(key, def) {
+    var wrap = make("div", "form-wrap");
+    var form = make("form", "contact__form");
+    form.noValidate = true;
+    form.action = "https://api.web3forms.com/submit";
+    form.method = "POST";
 
-  function onContactSubmit(e) {
-    e.preventDefault();
-    var form = e.currentTarget;
-    if (form.classList.contains("is-sending")) return;
-    setContactError("");
+    var titleId = "form-title-" + (++uid);
+    var head = make("div", "contact__head");
+    var ic = make("span", "card__icon");
+    ic.innerHTML = icon(def.icon || "chat");
+    var headText = make("div");
+    var title = make("h3", "contact__title", def.title);
+    title.id = titleId;
+    headText.appendChild(title);
+    if (def.subtitle) headText.appendChild(make("p", "contact__sub", def.subtitle));
+    head.appendChild(ic);
+    head.appendChild(headText);
+    form.appendChild(head);
 
-    var invalid = form.querySelector(".field__input:invalid");
-    form.classList.add("was-validated");
-    if (invalid) {
-      invalid.focus();
-      setContactError(invalid.type === "email" && invalid.value ? "Sprawdź adres e-mail." : "Uzupełnij zaznaczone pola.");
-      return;
+    var trap = make("input", "contact__trap");
+    trap.type = "checkbox";
+    trap.name = "botcheck";
+    trap.tabIndex = -1;
+    trap.autocomplete = "off";
+    trap.setAttribute("aria-hidden", "true");
+    form.appendChild(trap);
+
+    (def.fields || []).forEach(function (f) {
+      form.appendChild(f.type === "choice" || f.type === "multi" ? buildChoice(f) : buildInput(f));
+    });
+
+    var error = make("p", "contact__error");
+    error.setAttribute("role", "alert");
+    error.hidden = true;
+    form.appendChild(error);
+
+    var submit = make("button", "contact__submit");
+    submit.type = "submit";
+    submit.appendChild(make("span", "contact__submit-text", def.button || "Wyślij zgłoszenie"));
+    var spinner = make("span", "contact__spinner");
+    spinner.setAttribute("aria-hidden", "true");
+    submit.appendChild(spinner);
+    form.appendChild(submit);
+
+    var done = make("div", "contact__done");
+    done.hidden = true;
+    done.tabIndex = -1;
+    done.innerHTML = CHECK_SVG;
+    done.appendChild(make("p", "contact__title", def.successTitle || w3f.successTitle || "Wysłane!"));
+    done.appendChild(make("p", "contact__sub", def.successText || w3f.successText || ""));
+    var again = make("button", "redirect__cancel", "Wyślij kolejne");
+    again.type = "button";
+    done.appendChild(again);
+
+    wrap.appendChild(form);
+    wrap.appendChild(done);
+
+    function setError(msg) {
+      error.textContent = msg || "";
+      error.hidden = !msg;
     }
-    if (!contact.accessKey) {
-      setContactError("Formularz będzie aktywny już wkrótce — napisz na Instagramie 💪");
-      return;
+
+    function reset() {
+      form.reset();
+      form.classList.remove("was-validated");
+      setError("");
+      done.hidden = true;
+      form.hidden = false;
     }
 
-    var fd = new FormData(form);
-    if (fd.get("botcheck")) return;
-    var data = {};
-    fd.forEach(function (v, k) { data[k] = typeof v === "string" ? v.trim() : v; });
-    delete data.botcheck;
-    data.access_key = contact.accessKey;
-    data.subject = fillTemplate(contact.emailSubject || "Nowa wiadomość ze strony", data);
-    data.from_name = contact.emailFromName || document.title;
-    data.replyto = data.email;
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (form.classList.contains("is-sending")) return;
+      setError("");
 
-    form.classList.add("is-sending");
-    $("contactSubmit").disabled = true;
+      var invalid = form.querySelector(".field__input:invalid");
+      form.classList.add("was-validated");
+      if (invalid) {
+        invalid.focus();
+        setError(invalid.type === "email" && invalid.value ? "Sprawdź adres e-mail." : "Uzupełnij zaznaczone pola.");
+        return;
+      }
+      if (!w3f.accessKey) {
+        setError("Formularz będzie aktywny już wkrótce — napisz na Instagramie 💪");
+        return;
+      }
 
-    fetch(form.action, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(data),
-    })
-      .then(function (r) { return r.json().catch(function () { return {}; }); })
-      .then(function (res) {
-        if (!res.success) throw new Error(res.message || "error");
-        form.hidden = true;
-        var done = $("contactDone");
-        done.hidden = false;
-        done.focus({ preventScroll: true });
-        form.reset();
-        form.classList.remove("was-validated");
-        var first = form.querySelector('input[name="topic"]');
-        if (first) first.checked = true;
-      })
-      .catch(function () {
-        setContactError("Nie udało się wysłać. Spróbuj ponownie za chwilę albo napisz na Instagramie.");
-      })
-      .then(function () {
-        form.classList.remove("is-sending");
-        $("contactSubmit").disabled = false;
+      var fd = new FormData(form);
+      if (fd.get("botcheck")) return;
+      var data = { Formularz: def.title };
+      fd.forEach(function (v, k) {
+        if (k === "botcheck") return;
+        v = String(v).trim();
+        if (!v) return;
+        data[k] = data[k] ? data[k] + ", " + v : v;
       });
+      data.access_key = w3f.accessKey;
+      data.subject = fillTemplate(def.subject || "Nowa wiadomość ze strony — {name}", data);
+      data.from_name = w3f.fromName || document.title;
+      if (data.email) data.replyto = data.email;
+
+      form.classList.add("is-sending");
+      submit.disabled = true;
+
+      fetch(form.action, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(data),
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function (res) {
+          if (!res.success) throw new Error(res.message || "error");
+          reset();
+          form.hidden = true;
+          done.hidden = false;
+          done.focus({ preventScroll: true });
+        })
+        .catch(function () {
+          setError("Nie udało się wysłać. Spróbuj ponownie za chwilę albo napisz na Instagramie.");
+        })
+        .then(function () {
+          form.classList.remove("is-sending");
+          submit.disabled = false;
+        });
+    });
+
+    again.addEventListener("click", function () {
+      reset();
+      var first = form.querySelector(".field__input");
+      if (first) first.focus();
+    });
+
+    return { root: wrap, form: form, done: done, titleId: titleId, reset: reset };
   }
 
-  function contactAgain() {
-    $("contactDone").hidden = true;
-    var form = $("contactForm");
-    form.hidden = false;
-    form.querySelector('input[name="name"]').focus();
+  function getForm(key) {
+    if (!built[key] && forms[key]) built[key] = buildForm(key, forms[key]);
+    return built[key];
+  }
+
+  /* Formularz w treści strony (sekcja „Formularz”) */
+  function renderInlineForm() {
+    var section = $("kontakt");
+    if (!section) return;
+    var def = forms[inlineKey];
+    if (!def || def.show === false) { section.remove(); return; }
+    setText("contactHeading", def.heading);
+    $("contactMount").appendChild(getForm(inlineKey).root);
+  }
+
+  /* Formularze w wysuwanym panelu (karty usług) */
+  var sheet = $("sheet");
+  var sheetKey = null;
+  var sheetReturn = null;
+
+  function isSheetForm(key) {
+    return !!(key && key !== inlineKey && forms[key] && forms[key].show !== false);
+  }
+
+  function openSheet(key) {
+    if (!isSheetForm(key)) return false;
+    var f = getForm(key);
+    var body = $("sheetBody");
+    if (sheetKey !== key) {
+      body.textContent = "";
+      body.appendChild(f.root);
+      sheetKey = key;
+    }
+    if (!f.done.hidden) f.reset();
+    sheetReturn = document.activeElement;
+    sheet.querySelector(".sheet__panel").setAttribute("aria-labelledby", f.titleId);
+    sheet.querySelector(".sheet__panel").scrollTop = 0;
+    sheet.classList.add("is-active");
+    sheet.setAttribute("aria-hidden", "false");
+    document.body.classList.add("is-sheet");
+    try { history.replaceState(null, "", "#" + key); } catch (e) { /* file:// */ }
+    setTimeout(function () { sheet.querySelector(".sheet__panel").focus({ preventScroll: true }); }, 60);
+    return true;
+  }
+
+  function closeSheet() {
+    if (!sheet.classList.contains("is-active")) return;
+    sheet.classList.remove("is-active");
+    sheet.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("is-sheet");
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* file:// */ }
+    if (sheetReturn && sheetReturn.focus) sheetReturn.focus({ preventScroll: true });
   }
 
   function scrollToHash(hash) {
@@ -411,19 +547,21 @@
   renderStats();
   renderSocials();
   renderLinks();
-  renderContact();
+  renderInlineForm();
   runLoader();
-
-  if (contactEnabled()) {
-    $("contactForm").addEventListener("submit", onContactSubmit);
-    $("contactAgain").addEventListener("click", contactAgain);
-  }
+  if (location.hash) openSheet(location.hash.slice(1));
+  window.addEventListener("hashchange", function () { openSheet(location.hash.slice(1)); });
+  Array.prototype.forEach.call(sheet.querySelectorAll("[data-close]"), function (el) {
+    el.addEventListener("click", closeSheet);
+  });
 
   document.addEventListener("click", onLinkClick);
   $("redirectCancel").addEventListener("click", hideRedirect);
   $("shareBtn").addEventListener("click", share);
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && overlay.classList.contains("is-active")) hideRedirect();
+    if (e.key !== "Escape") return;
+    if (overlay.classList.contains("is-active")) hideRedirect();
+    else closeSheet();
   });
   // powrót przyciskiem „wstecz” (bfcache) — schowaj nakładkę
   window.addEventListener("pageshow", function (e) { if (e.persisted) hideRedirect(); });
