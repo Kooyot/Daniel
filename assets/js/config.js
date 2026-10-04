@@ -81,7 +81,7 @@ window.SITE_CONFIG = {
   // show: false = formularz całkowicie ukryty.
   contact: {
     show: true,
-    accessKey: "",
+    accessKey: "f7038138-f481-4b16-a1a5-04cad059d5b9",
     heading: "Formularz",
     title: "Napisz do mnie",
     subtitle: "Odpowiadam na każdą wiadomość",
