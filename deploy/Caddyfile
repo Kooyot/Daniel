@@ -1,5 +1,5 @@
 # Strona Daniela — Caddy sam pobiera i odnawia certyfikat HTTPS (Let's Encrypt).
-# __DOMAIN__ podmienia cloud-init przy tworzeniu serwera.
+# __DOMAIN__ podmienia deploy/install.sh (albo cloud-init przy nowym serwerze).
 
 __DOMAIN__ {
 	root * /srv/daniel
