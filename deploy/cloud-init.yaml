@@ -1,0 +1,57 @@
+#cloud-config
+# Serwer Hetzner Cloud (Ubuntu 24.04) dla strony Daniela.
+# Przy tworzeniu serwera podmień __DOMAIN__ (jedno miejsce poniżej) na domenę, np. danielstaszak.pl.
+# Co robi: instaluje Caddy (HTTPS), pobiera stronę z GitHuba, co 2 minuty
+# dociąga zmiany z gałęzi main, włącza firewall i automatyczne poprawki bezpieczeństwa.
+
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - curl
+  - gnupg
+  - debian-keyring
+  - debian-archive-keyring
+  - apt-transport-https
+  - ufw
+  - unattended-upgrades
+
+write_files:
+  - path: /etc/daniel-domain
+    content: |
+      __DOMAIN__
+  - path: /etc/systemd/system/daniel-update.service
+    content: |
+      [Unit]
+      Description=Pobierz najnowszą wersję strony z GitHuba
+      After=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/git -C /srv/daniel pull --ff-only --quiet
+  - path: /etc/systemd/system/daniel-update.timer
+    content: |
+      [Unit]
+      Description=Aktualizuj stronę co 2 minuty
+
+      [Timer]
+      OnBootSec=1min
+      OnUnitActiveSec=2min
+
+      [Install]
+      WantedBy=timers.target
+
+runcmd:
+  - curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt -o /etc/apt/sources.list.d/caddy-stable.list
+  - apt-get update
+  - apt-get install -y caddy
+  - git clone --depth 1 https://github.com/Kooyot/Daniel.git /srv/daniel
+  - sed "s/[_][_]DOMAIN[_][_]/$(tr -d '[:space:]' < /etc/daniel-domain)/g" /srv/daniel/deploy/Caddyfile > /etc/caddy/Caddyfile
+  - systemctl reload caddy || systemctl restart caddy
+  - systemctl daemon-reload
+  - systemctl enable --now daniel-update.timer
+  - ufw allow OpenSSH
+  - ufw allow 80/tcp
+  - ufw allow 443
+  - ufw --force enable

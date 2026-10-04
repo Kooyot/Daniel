@@ -1,0 +1,27 @@
+# Strona Daniela — Caddy sam pobiera i odnawia certyfikat HTTPS (Let's Encrypt).
+# __DOMAIN__ podmienia cloud-init przy tworzeniu serwera.
+
+__DOMAIN__ {
+	root * /srv/daniel
+
+	# pliki repozytorium, których nie pokazujemy publicznie
+	@hidden path /.git* /deploy* /.nojekyll
+	respond @hidden 404
+
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	header /assets/* Cache-Control "public, max-age=3600"
+
+	file_server
+}
+
+www.__DOMAIN__ {
+	redir https://__DOMAIN__{uri} permanent
+}
