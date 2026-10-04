@@ -3,6 +3,7 @@
    ---------------------------------------------------------------------
    • url: ""   → element jest ukryty
    • url: "#"  → element widoczny, po kliknięciu pokazuje „Link wkrótce”
+   • url: "#online" (klucz z forms) → otwiera formularz w wysuwanym panelu
    • newTab: true → link otwiera się w nowej karcie (bez animacji przekierowania)
    • Dostępne ikony: instagram, tiktok, youtube, facebook, mail, phone, chat,
      dumbbell, clipboard, calendar, apple, trophy, star, link
@@ -39,7 +40,7 @@ window.SITE_CONFIG = {
       title: "Prowadzenie online",
       subtitle: "Plan treningowy, dieta i stały kontakt",
       icon: "clipboard",
-      url: "#",
+      url: "#online", // otwiera formularz z forms.online
       featured: true,
       badge: "Polecane",
     },
@@ -47,13 +48,13 @@ window.SITE_CONFIG = {
       title: "Treningi personalne 1:1",
       subtitle: "Umów pierwszy trening na sali",
       icon: "dumbbell",
-      url: "#",
+      url: "#treningi", // otwiera formularz z forms.treningi
     },
     {
       title: "Konsultacja",
       subtitle: "Porozmawiajmy o Twoim celu",
       icon: "calendar",
-      url: "#",
+      url: "#konsultacja", // otwiera formularz z forms.konsultacja
     },
 
     { type: "heading", text: "Social media" },
@@ -75,22 +76,105 @@ window.SITE_CONFIG = {
     },
   ],
 
-  // Formularz kontaktowy (Web3Forms — wiadomości trafiają na Twój e-mail).
-  // accessKey: klucz z https://web3forms.com (jest publiczny, można go tu wpisać).
-  // Puste accessKey = formularz widoczny, ale wysyłka jeszcze nieaktywna.
-  // show: false = formularz całkowicie ukryty.
-  contact: {
-    show: true,
+  // Formularze (Web3Forms — zgłoszenia trafiają na e-mail podpięty w Web3Forms).
+  // accessKey: klucz z https://web3forms.com (jest publiczny, może być w kodzie).
+  web3forms: {
     accessKey: "f7038138-f481-4b16-a1a5-04cad059d5b9",
-    heading: "Formularz",
-    title: "Napisz do mnie",
-    subtitle: "Odpowiadam na każdą wiadomość",
-    topics: ["Prowadzenie online", "Treningi 1:1", "Konsultacja", "Inne"],
-    // Temat maila, który dostaniesz. {topic} i {name} zostaną podmienione.
-    emailSubject: "Nowe zgłoszenie: {topic} — {name}",
-    emailFromName: "Strona Daniel Staszak",
-    successTitle: "Wiadomość wysłana!",
+    fromName: "Strona Daniel Staszak", // nadawca maila, który dostajesz
+    successTitle: "Zgłoszenie wysłane!",
     successText: "Dzięki — odezwę się najszybciej, jak to możliwe.",
+  },
+
+  // Ochrona przed spamem (działa w przeglądarce):
+  // • jedna osoba (urządzenie/przeglądarka) = jedno zgłoszenie na lockHours godzin (0 = na zawsze)
+  // • ukryte pole-pułapka na boty i minimalny czas wypełniania formularza
+  // • e-mail i telefon są obowiązkowe w każdym formularzu
+  antispam: {
+    onePerPerson: true,
+    lockHours: 24,
+    minSeconds: 4,
+    lockedText: "Jedna osoba może wysłać jedno zgłoszenie — odezwę się do Ciebie. Jeśli chcesz coś dodać, napisz na Instagramie.",
+  },
+
+  /* Każdy formularz:
+     • klucz (np. online) = adres linku: "#online" w links otwiera ten formularz,
+       działa też bezpośredni link: twojadomena.pl/#online
+     • subject — temat maila; {name} i {Etykieta pola} zostaną podmienione
+     • fields — pola formularza:
+         type: "text" | "email" | "tel" | "textarea" — zwykłe pole
+               "choice" — wybór jednej opcji (pigułki), "multi" — kilka opcji
+         key: "name" / "email" — tylko dla imienia i e-maila (odpowiedź do klienta)
+         required: true — pole obowiązkowe, half: true — pół szerokości na komputerze
+     • show: false — ukrywa formularz */
+  forms: {
+    // Formularz w sekcji „Formularz” na dole strony (ogólny kontakt)
+    kontakt: {
+      heading: "Formularz",
+      title: "Napisz do mnie",
+      subtitle: "Pytanie, współpraca, cokolwiek — odpowiadam na każdą wiadomość",
+      icon: "chat",
+      button: "Wyślij wiadomość",
+      subject: "Wiadomość: {Temat} — {name}",
+      fields: [
+        { label: "Temat", type: "choice", options: ["Pytanie", "Współpraca / reklama", "Inne"] },
+        { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
+        { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
+        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
+        { label: "Wiadomość", type: "textarea", required: true, placeholder: "W czym mogę pomóc?" },
+      ],
+    },
+
+    online: {
+      title: "Prowadzenie online",
+      subtitle: "Plan treningowy, dieta i stały kontakt. Opowiedz mi o sobie — przygotuję ofertę pod Ciebie.",
+      icon: "clipboard",
+      button: "Chcę współpracować",
+      subject: "Prowadzenie online — {name}",
+      fields: [
+        { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
+        { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
+        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
+        { label: "Twój cel", type: "choice", options: ["Redukcja", "Budowa masy", "Rekompozycja", "Siła", "Zdrowie i forma"] },
+        { label: "Doświadczenie", type: "choice", options: ["Początkujący", "Średniozaawansowany", "Zaawansowany"] },
+        { label: "Ile dni w tygodniu możesz trenować?", type: "choice", options: ["2", "3", "4", "5+"] },
+        { label: "Gdzie trenujesz?", type: "choice", options: ["Siłownia", "Dom", "Plener"] },
+        { label: "Wiek, wzrost, waga", type: "text", placeholder: "np. 28 lat, 180 cm, 85 kg" },
+        { label: "Coś, o czym powinienem wiedzieć?", type: "textarea", placeholder: "Kontuzje, praca zmianowa, dotychczasowe treningi, dieta…" },
+      ],
+    },
+
+    treningi: {
+      title: "Treningi personalne 1:1",
+      subtitle: "Trening ze mną na sali. Zostaw kontakt — ustalimy termin pierwszego treningu.",
+      icon: "dumbbell",
+      button: "Umów trening",
+      subject: "Trening 1:1 — {name}",
+      fields: [
+        { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
+        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
+        { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
+        { label: "Cel", type: "choice", options: ["Redukcja", "Budowa masy", "Technika ćwiczeń", "Siła", "Powrót do formy"] },
+        { label: "Preferowane dni", type: "multi", options: ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nd"] },
+        { label: "Preferowana pora", type: "multi", options: ["Rano", "Południe", "Popołudnie", "Wieczór"] },
+        { label: "Wiadomość", type: "textarea", placeholder: "Doświadczenie, kontuzje, pytania…" },
+      ],
+    },
+
+    konsultacja: {
+      title: "Konsultacja",
+      subtitle: "Porozmawiajmy o Twoim celu — trening, dieta, plan działania.",
+      icon: "calendar",
+      button: "Umów konsultację",
+      subject: "Konsultacja: {Forma konsultacji} — {name}",
+      fields: [
+        { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
+        { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
+        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
+        { label: "Forma konsultacji", type: "choice", options: ["Online (wideo)", "Na sali", "Telefonicznie"] },
+        { label: "Temat", type: "multi", options: ["Trening", "Dieta", "Suplementacja", "Przygotowanie do zawodów", "Inne"] },
+        { label: "Z czym przychodzisz?", type: "textarea", required: true, placeholder: "Opisz krótko swoją sytuację i cel." },
+      ],
+    },
   },
 
   motto: "Forma nie bierze się z motywacji. Bierze się z powtórzeń.",

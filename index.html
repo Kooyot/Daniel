@@ -23,7 +23,7 @@
   <link rel="preload" href="assets/fonts/oswald-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/css/style.css">
-  <noscript><style>.loader, .redirect, .share { display: none !important; } body.is-loading { overflow: auto; } body.is-loading .reveal { opacity: 1; }</style></noscript>
+  <noscript><style>.loader, .redirect, .share, .contact, .sheet { display: none !important; } body.is-loading { overflow: auto; } body.is-loading .reveal { opacity: 1; }</style></noscript>
 
   <script src="assets/js/config.js" defer></script>
   <script src="assets/js/figures.js" defer></script>
@@ -72,60 +72,10 @@
 
     <nav class="links" id="links" aria-label="Linki"></nav>
 
-    <!-- ===== Formularz kontaktowy (Web3Forms) ===== -->
-    <section class="contact reveal" id="kontakt" aria-labelledby="contactTitle">
+    <!-- ===== Formularz kontaktowy (Web3Forms) — treść w config.js → forms ===== -->
+    <section class="contact reveal" id="kontakt" data-form="kontakt">
       <h2 class="links__heading" id="contactHeading">Formularz</h2>
-      <div class="contact__card">
-        <form class="contact__form" id="contactForm" action="https://api.web3forms.com/submit" method="POST" novalidate>
-          <div class="contact__head">
-            <span class="card__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5 6 15.6A8 8 0 1 1 9 18.6z"/><path d="M9 10.5h6M9 13.5h4"/></svg></span>
-            <div>
-              <h3 class="contact__title" id="contactTitle">Napisz do mnie</h3>
-              <p class="contact__sub" id="contactSub">Odpowiadam na każdą wiadomość</p>
-            </div>
-          </div>
-
-          <input type="hidden" name="access_key" id="contactKey">
-          <input type="checkbox" name="botcheck" class="contact__trap" tabindex="-1" autocomplete="off" aria-hidden="true">
-
-          <fieldset class="contact__topics" id="contactTopics">
-            <legend class="contact__label">Czego szukasz?</legend>
-          </fieldset>
-
-          <label class="field">
-            <span class="contact__label">Imię</span>
-            <input class="field__input" type="text" name="name" autocomplete="given-name" required maxlength="80" placeholder="Jak masz na imię?">
-          </label>
-          <div class="contact__row">
-            <label class="field">
-              <span class="contact__label">E-mail</span>
-              <input class="field__input" type="email" name="email" autocomplete="email" required maxlength="120" placeholder="ty@przyklad.pl">
-            </label>
-            <label class="field">
-              <span class="contact__label">Telefon <em>(opcjonalnie)</em></span>
-              <input class="field__input" type="tel" name="phone" autocomplete="tel" maxlength="30" placeholder="+48 …">
-            </label>
-          </div>
-          <label class="field">
-            <span class="contact__label">Wiadomość</span>
-            <textarea class="field__input" name="message" rows="4" required maxlength="3000" placeholder="Opisz swój cel, doświadczenie i ile razy w tygodniu możesz trenować."></textarea>
-          </label>
-
-          <p class="contact__error" id="contactError" role="alert" hidden></p>
-
-          <button class="contact__submit" id="contactSubmit" type="submit">
-            <span class="contact__submit-text">Wyślij wiadomość</span>
-            <span class="contact__spinner" aria-hidden="true"></span>
-          </button>
-        </form>
-
-        <div class="contact__done" id="contactDone" hidden tabindex="-1">
-          <svg class="contact__check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="m15 27 7.5 7.5L38 19"/></svg>
-          <p class="contact__title" id="contactDoneTitle">Wiadomość wysłana!</p>
-          <p class="contact__sub" id="contactDoneText">Dzięki — odezwę się najszybciej, jak to możliwe.</p>
-          <button class="redirect__cancel" id="contactAgain" type="button">Wyślij kolejną</button>
-        </div>
-      </div>
+      <div class="contact__card" id="contactMount"></div>
     </section>
 
     <noscript>
@@ -153,6 +103,17 @@
     <p class="redirect__title" id="redirectTitle">Instagram</p>
     <div class="redirect__bar"><span id="redirectBar"></span></div>
     <button class="redirect__cancel" id="redirectCancel" type="button">Anuluj</button>
+  </div>
+
+  <!-- ===== Formularze usług (wysuwany panel) ===== -->
+  <div class="sheet" id="sheet" aria-hidden="true">
+    <div class="sheet__backdrop" data-close></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" tabindex="-1">
+      <button class="sheet__close" type="button" data-close aria-label="Zamknij formularz">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div id="sheetBody"></div>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
