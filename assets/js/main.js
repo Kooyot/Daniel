@@ -47,7 +47,7 @@
 
   function linkAttrs(a, item) {
     a.href = item.url;
-    a.dataset.title = item.title || item.label || "";
+    a.dataset.title = item.redirectLabel || item.title || item.label || "";
     if (item.newTab) { a.target = "_blank"; }
     if (isExternal(item.url)) a.rel = "noopener";
   }

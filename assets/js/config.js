@@ -28,10 +28,10 @@ window.SITE_CONFIG = {
 
   socials: [
     { icon: "instagram", label: "Instagram", url: "https://www.instagram.com/danielstaszak_/" },
-    { icon: "tiktok", label: "TikTok", url: "#" },
+    { icon: "tiktok", label: "TikTok", url: "https://www.tiktok.com/@danielstaszak_" },
     { icon: "youtube", label: "YouTube", url: "#" },
     { icon: "facebook", label: "Facebook", url: "#" },
-    { icon: "mail", label: "E-mail", url: "#" },
+    { icon: "mail", label: "E-mail", url: "mailto:kontakt@danielstaszak.pl" },
   ],
 
   links: [
@@ -64,15 +64,22 @@ window.SITE_CONFIG = {
       icon: "instagram",
       url: "https://www.instagram.com/danielstaszak_/",
     },
-    { title: "TikTok", subtitle: "Krótkie porady treningowe", icon: "tiktok", url: "#" },
+    { title: "TikTok", subtitle: "@danielstaszak_ · krótkie porady treningowe", icon: "tiktok", url: "https://www.tiktok.com/@danielstaszak_" },
     { title: "YouTube", subtitle: "Pełne treningi i vlogi", icon: "youtube", url: "#" },
 
     { type: "heading", text: "Kontakt" },
     {
-      title: "Napisz do mnie",
-      subtitle: "Odpowiadam na każdą wiadomość",
+      title: "Napisz e-mail",
+      subtitle: "kontakt@danielstaszak.pl",
       icon: "mail",
-      url: "#kontakt", // przewija do formularza poniżej
+      url: "mailto:kontakt@danielstaszak.pl?subject=Wiadomo%C5%9B%C4%87%20ze%20strony", // otwiera program pocztowy
+    },
+    {
+      title: "Napisz na Instagramie",
+      subtitle: "Wiadomość prywatna do @danielstaszak_",
+      icon: "instagram",
+      url: "https://ig.me/m/danielstaszak_", // otwiera czat (DM) z Danielem
+      redirectLabel: "Instagram · wiadomość", // napis na ekranie przejścia
     },
   ],
 
@@ -107,23 +114,6 @@ window.SITE_CONFIG = {
          required: true — pole obowiązkowe, half: true — pół szerokości na komputerze
      • show: false — ukrywa formularz */
   forms: {
-    // Formularz w sekcji „Formularz” na dole strony (ogólny kontakt)
-    kontakt: {
-      heading: "Formularz",
-      title: "Napisz do mnie",
-      subtitle: "Pytanie, współpraca, cokolwiek — odpowiadam na każdą wiadomość",
-      icon: "chat",
-      button: "Wyślij wiadomość",
-      subject: "Wiadomość: {Temat} — {name}",
-      fields: [
-        { label: "Temat", type: "choice", options: ["Pytanie", "Współpraca / reklama", "Inne"] },
-        { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
-        { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
-        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
-        { label: "Wiadomość", type: "textarea", required: true, placeholder: "W czym mogę pomóc?" },
-      ],
-    },
-
     online: {
       title: "Prowadzenie online",
       subtitle: "Plan treningowy, dieta i stały kontakt. Opowiedz mi o sobie — przygotuję ofertę pod Ciebie.",
