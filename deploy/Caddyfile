@@ -4,10 +4,6 @@
 __DOMAIN__ {
 	root * /srv/daniel
 
-	# pliki repozytorium, których nie pokazujemy publicznie
-	@hidden path /.git* /deploy* /.nojekyll
-	respond @hidden 404
-
 	encode zstd gzip
 
 	header {
@@ -19,12 +15,25 @@ __DOMAIN__ {
 	}
 	# strona, skrypty i style zawsze sprawdzane na serwerze (po zmianie od razu nowa wersja),
 	# zdjęcia i fonty z dłuższą pamięcią podręczną
-	@code path / *.html *.js *.css
+	@code path / /panel/ *.html *.js *.css *.webmanifest
 	header @code Cache-Control "no-cache"
 	header /assets/img/* Cache-Control "public, max-age=86400"
 	header /assets/fonts/* Cache-Control "public, max-age=2592000"
 
-	file_server
+	# panel nie trafia do wyszukiwarek
+	header /panel/* X-Robots-Tag "noindex, nofollow"
+
+	# formularze i panel → backend (server/app.js)
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3100
+	}
+
+	handle {
+		# pliki repozytorium, których nie pokazujemy publicznie
+		@hidden path /.git* /deploy* /server* /.nojekyll
+		respond @hidden 404
+		file_server
+	}
 }
 
 www.__DOMAIN__ {

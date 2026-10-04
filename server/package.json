@@ -1,0 +1,17 @@
+{
+  "name": "daniel-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Backend formularzy i panel Daniela Staszaka",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node --test test/api.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  }
+}
