@@ -561,6 +561,52 @@ textarea.field__input { resize: vertical; min-height: 112px; }
   font-size: 0.86rem;
 }
 
+/* ---------- Okno „Napisz do mnie” ---------- */
+.contact-box { gap: 14px; }
+.contact-box .contact__head { margin-bottom: 2px; }
+.contact-box__how { margin: 6px 0 -4px; }
+.contact-ways { display: flex; flex-direction: column; gap: 10px; }
+.contact-way {
+  display: flex; align-items: center; gap: 14px;
+  min-height: 68px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.25s var(--ease), border-color 0.25s, background 0.25s, box-shadow 0.25s;
+}
+.contact-way:hover { transform: translateY(-2px); border-color: rgba(217, 168, 78, 0.5); background: rgba(217, 168, 78, 0.06); }
+.contact-way:active { transform: scale(0.985); }
+.contact-way:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.contact-way__icon {
+  flex: none;
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border-radius: 13px;
+  background: rgba(217, 168, 78, 0.1);
+  border: 1px solid rgba(217, 168, 78, 0.22);
+  color: var(--gold);
+}
+.contact-way__icon svg { width: 22px; height: 22px; }
+.contact-way__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.contact-way__text strong { font-weight: 600; font-size: 1rem; }
+.contact-way__text span { font-size: 0.84rem; color: var(--muted); overflow-wrap: anywhere; }
+.contact-way__arrow { flex: none; color: var(--muted); display: grid; place-items: center; }
+.contact-way__arrow svg { width: 16px; height: 16px; }
+.contact-way--mail {
+  border-color: transparent;
+  background: var(--grad-gold);
+  color: var(--ink);
+  box-shadow: 0 16px 34px -16px rgba(217, 168, 78, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.contact-way--mail:hover { border-color: transparent; background: var(--grad-gold); }
+.contact-way--mail .contact-way__icon { background: rgba(23, 19, 12, 0.12); border-color: rgba(23, 19, 12, 0.14); color: var(--ink); }
+.contact-way--mail .contact-way__text span, .contact-way--mail .contact-way__arrow { color: rgba(23, 19, 12, 0.72); }
+.contact-box__note { font-size: 0.78rem; color: var(--faint); line-height: 1.45; }
+
 .contact__lock { width: 54px; height: 54px; margin-bottom: 8px; color: var(--gold); stroke-width: 1.6; }
 .contact__done--locked .contact__sub { max-width: 40ch; }
 

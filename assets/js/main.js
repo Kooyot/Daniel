@@ -769,10 +769,98 @@
     mountInSheet(f.root, f.titleId);
   }
 
+  /* Okno „Napisz do mnie”: wiadomość wysyłana e-mailem albo w DM na Instagramie */
+  var contactCfg = cfg.contact || {};
+
+  function showContact() {
+    var c = contactCfg;
+    var box = make("div", "picker contact-box");
+    var titleId = "contact-title-" + (++uid);
+
+    var head = make("div", "contact__head");
+    var ic = make("span", "card__icon");
+    ic.innerHTML = icon("chat");
+    var headText = make("div");
+    var h = make("h3", "contact__title", c.title || "Napisz do mnie");
+    h.id = titleId;
+    headText.appendChild(h);
+    if (c.subtitle) headText.appendChild(make("p", "contact__sub", c.subtitle));
+    head.appendChild(ic);
+    head.appendChild(headText);
+    box.appendChild(head);
+
+    var topic = (c.topics || [])[0] || "";
+    if ((c.topics || []).length) {
+      box.appendChild(buildChoice({ label: "Temat", type: "choice", options: c.topics }));
+    }
+
+    var field = buildInput({ label: "Wiadomość", type: "textarea", placeholder: c.placeholder || "" });
+    box.appendChild(field);
+    var text = field.querySelector("textarea");
+
+    box.appendChild(make("p", "contact__label contact-box__how", "Jak chcesz wysłać?"));
+    var ways = make("div", "contact-ways");
+
+    function way(cls, iconName, title, sub) {
+      var a = make("a", "contact-way " + cls);
+      var i = make("span", "contact-way__icon");
+      i.innerHTML = icon(iconName);
+      var t = make("span", "contact-way__text");
+      t.appendChild(make("strong", null, title));
+      t.appendChild(make("span", null, sub));
+      var arrow = make("span", "contact-way__arrow");
+      arrow.innerHTML = icon("arrow");
+      a.appendChild(i);
+      a.appendChild(t);
+      a.appendChild(arrow);
+      ways.appendChild(a);
+      return a;
+    }
+
+    var mail = c.email ? way("contact-way--mail", "mail", "Wyślij e-mailem", c.email) : null;
+    var ig = c.instagram ? way("contact-way--ig", "instagram", "Napisz na Instagramie", "@" + c.instagram + " · wiadomość prywatna") : null;
+    box.appendChild(ways);
+    if (ig) box.appendChild(make("p", "contact-box__note", "Instagram nie pozwala wpisać wiadomości automatycznie — skopiujemy ją, wystarczy wkleić w czacie."));
+
+    function message() { return text.value.trim(); }
+
+    function updateMail() {
+      if (!mail) return;
+      var subject = topic + " — wiadomość ze strony";
+      var body = message();
+      mail.href = "mailto:" + c.email + "?subject=" + encodeURIComponent(subject) +
+        (body ? "&body=" + encodeURIComponent(body) : "");
+    }
+
+    box.addEventListener("change", function (e) {
+      if (e.target.name === "Temat") { topic = e.target.value; updateMail(); }
+    });
+    text.addEventListener("input", updateMail);
+    updateMail();
+
+    if (ig) {
+      ig.href = "https://ig.me/m/" + c.instagram;
+      ig.target = "_blank";
+      ig.rel = "noopener";
+      ig.addEventListener("click", function () {
+        var msg = message();
+        if (!msg || !navigator.clipboard || !window.isSecureContext) return;
+        navigator.clipboard.writeText(topic + ": " + msg).then(
+          function () { toast("Wiadomość skopiowana — wklej ją w czacie 📋"); },
+          function () {}
+        );
+      });
+    }
+
+    mountInSheet(box, titleId);
+  }
+
   function openSheet(key) {
-    if (!isSheetForm(key)) return false;
+    var isContact = !!(contactCfg.key && key === contactCfg.key);
+    if (!isContact && !isSheetForm(key)) return false;
     if (!sheet.classList.contains("is-active")) sheetReturn = document.activeElement;
-    showPicker(key);
+    if (isContact) showContact();
+    else showPicker(key);
     sheet.classList.add("is-active");
     sheet.setAttribute("aria-hidden", "false");
     document.body.classList.add("is-sheet");
