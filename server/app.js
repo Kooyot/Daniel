@@ -10,6 +10,7 @@ const vm = require("vm");
 const crypto = require("crypto");
 const { Store } = require("./store");
 const { Mailer } = require("./mail");
+const { Push } = require("./push");
 const auth = require("./auth");
 
 const env = process.env;
@@ -38,8 +39,10 @@ const LOCK_MS = (guard.lockHours == null ? 24 : guard.lockHours) > 0
   : Infinity;
 const MIN_MS = (guard.minSeconds == null ? 4 : guard.minSeconds) * 1000;
 
-const store = new Store(env.DATA_DIR || path.join(__dirname, "data"));
+const DATA_DIR = env.DATA_DIR || path.join(__dirname, "data");
+const store = new Store(DATA_DIR);
 const mailer = new Mailer(env);
+const push = new Push(store, DATA_DIR, env.MAIL_FROM);
 
 /* ---------- Narzędzia ---------- */
 function send(res, status, body, headers) {
@@ -180,10 +183,53 @@ async function handleSubmit(req, res) {
   console.log("[submit] %s %s (%s)", sub.id, sub.formTitle, sub.name);
 
   mailer.notifyNew(sub).catch((err) => console.error("[mail] powiadomienie nieudane:", err.message));
+  push.notify(pushMessage(sub)).catch((err) => console.error("[push]", err.message));
   send(res, 200, { ok: true });
 }
 
 /* ---------- Panel ---------- */
+function newCount() {
+  return store.data.submissions.filter((s) => s.status === "new").length;
+}
+
+function pushMessage(sub) {
+  const detail = sub.answers.map((a) => a.value).filter((v) => v.length < 40).slice(0, 2).join(" · ");
+  return {
+    title: "Nowe zgłoszenie: " + sub.formTitle,
+    body: sub.name + (detail ? " — " + detail : "") + "\nStuknij, aby otworzyć.",
+    url: "/panel/#/z/" + sub.id,
+    tag: sub.id,
+    badge: newCount(),
+  };
+}
+
+async function handlePush(req, res, action) {
+  if (!action && req.method === "GET") {
+    return send(res, 200, { publicKey: push.publicKey(), devices: push.list().length });
+  }
+  if (action === "subscribe" && req.method === "POST") {
+    const body = await readJson(req, 8 * 1024);
+    push.subscribe(body.subscription, req.headers["user-agent"]);
+    return send(res, 200, { ok: true, devices: push.list().length });
+  }
+  if (action === "unsubscribe" && req.method === "POST") {
+    const body = await readJson(req, 8 * 1024);
+    push.unsubscribe(String(body.endpoint || ""));
+    return send(res, 200, { ok: true, devices: push.list().length });
+  }
+  if (action === "test" && req.method === "POST") {
+    const sent = await push.notify({
+      title: "Powiadomienia działają 💪",
+      body: "Tak będzie wyglądać informacja o nowym zgłoszeniu.",
+      url: "/panel/",
+      tag: "test",
+      badge: newCount(),
+    });
+    return send(res, 200, { ok: true, sent });
+  }
+  send(res, 404, { error: "not_found" });
+}
+
 function summary(s) {
   const last = s.replies[s.replies.length - 1];
   return {
@@ -210,6 +256,7 @@ async function handleLogin(req, res) {
 
 async function handlePanel(req, res, parts) {
   // parts: ["submissions"] | ["submissions", id] | ["submissions", id, "reply"]
+  if (parts[0] === "push") return handlePush(req, res, parts[1]);
   if (parts[0] !== "submissions") return send(res, 404, { error: "not_found" });
   const id = parts[1];
 
@@ -290,4 +337,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, store };
+module.exports = { server, store, push };
