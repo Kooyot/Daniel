@@ -276,14 +276,52 @@
   /* ----------------------------- Formularze -------------------------- */
   var w3f = cfg.web3forms || {};
   var forms = cfg.forms || {};
+  var guard = cfg.antispam || {};
   var built = {};
   var uid = 0;
   var inlineKey = $("kontakt") ? $("kontakt").getAttribute("data-form") : "";
 
   var CHECK_SVG = '<svg class="contact__check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="m15 27 7.5 7.5L38 19"/></svg>';
+  var LOCK_SVG = '<svg class="contact__lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>';
 
   function fieldName(f) { return f.key || f.label; }
 
+  function fillTemplate(tpl, data) {
+    return String(tpl || "")
+      .replace(/\{([^}]+)\}/g, function (_, k) { return data[k] || ""; })
+      .replace(/\s+—\s*$/, "");
+  }
+
+  /* ---- Ochrona przed spamem: jedno zgłoszenie na osobę (to urządzenie) ---- */
+  var LOCK_KEY = "ds-form-sent";
+
+  function readLock() {
+    var raw = null;
+    try { raw = localStorage.getItem(LOCK_KEY); } catch (e) { /* tryb prywatny */ }
+    if (!raw) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + LOCK_KEY + "=([^;]*)"));
+      if (m) raw = decodeURIComponent(m[1]);
+    }
+    if (!raw) return null;
+    try {
+      var lock = JSON.parse(raw);
+      var hours = guard.lockHours == null ? 24 : guard.lockHours;
+      if (hours > 0 && Date.now() - lock.t > hours * 3600 * 1000) return null;
+      return lock;
+    } catch (e) { return null; }
+  }
+
+  function writeLock(formTitle) {
+    var raw = JSON.stringify({ t: Date.now(), form: formTitle });
+    try { localStorage.setItem(LOCK_KEY, raw); } catch (e) { /* tryb prywatny */ }
+    var hours = guard.lockHours == null ? 24 : guard.lockHours;
+    var maxAge = hours > 0 ? hours * 3600 : 3600 * 24 * 365 * 5;
+    document.cookie = LOCK_KEY + "=" + encodeURIComponent(raw) + "; max-age=" + maxAge + "; path=/; SameSite=Lax";
+  }
+
+  function guardEnabled() { return guard.onePerPerson !== false; }
+
+  /* ---- Budowanie pól ---- */
   function buildChoice(f) {
     var box = make("fieldset", "contact__topics");
     box.appendChild(make("legend", "contact__label", f.label));
@@ -315,6 +353,7 @@
     input.name = fieldName(f);
     input.required = !!f.required;
     input.maxLength = isText ? 3000 : 120;
+    if (f.type === "tel") input.inputMode = "tel";
     if (f.placeholder) input.placeholder = f.placeholder;
     if (f.autocomplete) input.autocomplete = f.autocomplete;
     label.appendChild(cap);
@@ -322,35 +361,73 @@
     return label;
   }
 
-  function fillTemplate(tpl, data) {
-    return String(tpl || "")
-      .replace(/\{([^}]+)\}/g, function (_, k) { return data[k] || ""; })
-      .replace(/\s+—\s*$/, "");
+  var PHONE_RE = /^\+?[0-9 ()-]{9,20}$/;
+  var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+
+  // własna walidacja telefonu i e-maila (ostrzejsza niż domyślna w przeglądarce)
+  function checkContact(form) {
+    Array.prototype.forEach.call(form.querySelectorAll(".field__input"), function (input) {
+      var v = input.value.trim();
+      var bad = false;
+      if (v && input.type === "tel") bad = !PHONE_RE.test(v) || v.replace(/\D/g, "").length < 9;
+      if (v && input.type === "email") bad = !EMAIL_RE.test(v);
+      input.setCustomValidity(bad ? "invalid" : "");
+    });
   }
 
+  function errorFor(input) {
+    if (!input.value.trim()) return "Uzupełnij zaznaczone pola.";
+    if (input.type === "email") return "Sprawdź adres e-mail.";
+    if (input.type === "tel") return "Sprawdź numer telefonu (min. 9 cyfr).";
+    return "Uzupełnij zaznaczone pola.";
+  }
+
+  function actions(primaryText, secondaryText) {
+    var row = make("div", "form-actions");
+    var primary = make("button", "contact__submit");
+    primary.type = "button";
+    primary.appendChild(make("span", "contact__submit-text", primaryText));
+    var spinner = make("span", "contact__spinner");
+    spinner.setAttribute("aria-hidden", "true");
+    primary.appendChild(spinner);
+    var secondary = make("button", "form-back", secondaryText);
+    secondary.type = "button";
+    row.appendChild(primary);
+    row.appendChild(secondary);
+    return { row: row, primary: primary, secondary: secondary };
+  }
+
+  /* ---- Formularz: wypełnianie → sprawdzenie → wysłano / blokada ---- */
   function buildForm(key, def) {
     var wrap = make("div", "form-wrap");
+    var titleId = "form-title-" + (++uid);
+    var shownAt = Date.now();
+    var pending = null;
+
+    function header() {
+      var head = make("div", "contact__head");
+      var ic = make("span", "card__icon");
+      ic.innerHTML = icon(def.icon || "chat");
+      var headText = make("div");
+      headText.appendChild(make("h3", "contact__title", def.title));
+      if (def.subtitle) headText.appendChild(make("p", "contact__sub", def.subtitle));
+      head.appendChild(ic);
+      head.appendChild(headText);
+      return head;
+    }
+
+    /* krok 1 — formularz */
     var form = make("form", "contact__form");
     form.noValidate = true;
     form.action = "https://api.web3forms.com/submit";
     form.method = "POST";
-
-    var titleId = "form-title-" + (++uid);
-    var head = make("div", "contact__head");
-    var ic = make("span", "card__icon");
-    ic.innerHTML = icon(def.icon || "chat");
-    var headText = make("div");
-    var title = make("h3", "contact__title", def.title);
-    title.id = titleId;
-    headText.appendChild(title);
-    if (def.subtitle) headText.appendChild(make("p", "contact__sub", def.subtitle));
-    head.appendChild(ic);
-    head.appendChild(headText);
+    var head = header();
+    head.querySelector(".contact__title").id = titleId;
     form.appendChild(head);
 
     var trap = make("input", "contact__trap");
-    trap.type = "checkbox";
-    trap.name = "botcheck";
+    trap.type = "text";
+    trap.name = "website";
     trap.tabIndex = -1;
     trap.autocomplete = "off";
     trap.setAttribute("aria-hidden", "true");
@@ -367,71 +444,178 @@
 
     var submit = make("button", "contact__submit");
     submit.type = "submit";
-    submit.appendChild(make("span", "contact__submit-text", def.button || "Wyślij zgłoszenie"));
-    var spinner = make("span", "contact__spinner");
-    spinner.setAttribute("aria-hidden", "true");
-    submit.appendChild(spinner);
+    submit.appendChild(make("span", "contact__submit-text", "Dalej — sprawdź zgłoszenie"));
     form.appendChild(submit);
 
+    /* krok 2 — sprawdzenie przed wysłaniem */
+    var review = make("div", "form-review");
+    review.hidden = true;
+    review.tabIndex = -1;
+    var reviewHead = make("div", "form-review__head");
+    reviewHead.appendChild(make("p", "contact__label", "Krok 2 z 2 · Sprawdź zgłoszenie"));
+    reviewHead.appendChild(make("h3", "contact__title", "Czy wszystko się zgadza?"));
+    var picked = make("div", "form-review__form");
+    picked.appendChild(make("span", "form-review__form-label", "Wybrany formularz"));
+    var pickedRow = make("span", "form-review__form-row");
+    var pickedIcon = make("span", "form-review__form-icon");
+    pickedIcon.innerHTML = icon(def.icon || "chat");
+    pickedRow.appendChild(pickedIcon);
+    pickedRow.appendChild(make("strong", null, def.title));
+    picked.appendChild(pickedRow);
+    reviewHead.appendChild(picked);
+    review.appendChild(reviewHead);
+    var summary = make("dl", "form-review__list");
+    review.appendChild(summary);
+    var reviewError = make("p", "contact__error");
+    reviewError.setAttribute("role", "alert");
+    reviewError.hidden = true;
+    review.appendChild(reviewError);
+    var reviewActs = actions(def.button || "Tak, wysyłam", "Popraw dane");
+    review.appendChild(reviewActs.row);
+    var switchBtn = null;
+    if (key !== inlineKey) {
+      switchBtn = make("button", "form-link", "To nie ten formularz? Zmień wybór");
+      switchBtn.type = "button";
+      review.appendChild(switchBtn);
+    }
+
+    /* krok 3 — wysłano */
     var done = make("div", "contact__done");
     done.hidden = true;
     done.tabIndex = -1;
     done.innerHTML = CHECK_SVG;
     done.appendChild(make("p", "contact__title", def.successTitle || w3f.successTitle || "Wysłane!"));
     done.appendChild(make("p", "contact__sub", def.successText || w3f.successText || ""));
-    var again = make("button", "redirect__cancel", "Wyślij kolejne");
-    again.type = "button";
-    done.appendChild(again);
+
+    /* blokada — ta osoba już wysłała zgłoszenie */
+    var locked = make("div", "contact__done contact__done--locked");
+    locked.hidden = true;
+    locked.tabIndex = -1;
+    locked.innerHTML = LOCK_SVG;
+    locked.appendChild(make("p", "contact__title", "Zgłoszenie już do mnie dotarło"));
+    var lockedText = make("p", "contact__sub");
+    locked.appendChild(lockedText);
 
     wrap.appendChild(form);
+    wrap.appendChild(review);
     wrap.appendChild(done);
+    wrap.appendChild(locked);
 
-    function setError(msg) {
-      error.textContent = msg || "";
-      error.hidden = !msg;
+    function show(step) {
+      form.hidden = step !== form;
+      review.hidden = step !== review;
+      done.hidden = step !== done;
+      locked.hidden = step !== locked;
     }
 
-    function reset() {
-      form.reset();
-      form.classList.remove("was-validated");
-      setError("");
-      done.hidden = true;
-      form.hidden = false;
+    function setError(box, msg) {
+      box.textContent = msg || "";
+      box.hidden = !msg;
     }
 
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (form.classList.contains("is-sending")) return;
-      setError("");
+    function showLocked(lock) {
+      var when = new Date(lock.t);
+      var date = when.toLocaleDateString("pl-PL", { day: "numeric", month: "long" }) +
+        ", " + when.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+      lockedText.textContent = "Twoje zgłoszenie „" + (lock.form || "formularz") + "” jest już wysłane (" + date + "). " +
+        (guard.lockedText || "Jedna osoba może wysłać jedno zgłoszenie — odezwę się do Ciebie. Jeśli chcesz coś dodać, napisz na Instagramie.");
+      show(locked);
+    }
 
-      var invalid = form.querySelector(".field__input:invalid");
-      form.classList.add("was-validated");
-      if (invalid) {
-        invalid.focus();
-        setError(invalid.type === "email" && invalid.value ? "Sprawdź adres e-mail." : "Uzupełnij zaznaczone pola.");
-        return;
-      }
-      if (!w3f.accessKey) {
-        setError("Formularz będzie aktywny już wkrótce — napisz na Instagramie 💪");
-        return;
-      }
+    function refresh() {
+      var lock = guardEnabled() && readLock();
+      if (lock) { showLocked(lock); return; }
+      if (!done.hidden) return;
+      if (locked.hidden === false) show(form);
+      shownAt = Date.now();
+    }
 
+    function collect() {
       var fd = new FormData(form);
-      if (fd.get("botcheck")) return;
-      var data = { Formularz: def.title };
+      var data = {};
       fd.forEach(function (v, k) {
-        if (k === "botcheck") return;
+        if (k === "website") return;
         v = String(v).trim();
         if (!v) return;
         data[k] = data[k] ? data[k] + ", " + v : v;
       });
+      return data;
+    }
+
+    function renderSummary(data) {
+      summary.textContent = "";
+      (def.fields || []).forEach(function (f) {
+        var v = data[fieldName(f)];
+        if (!v) return;
+        summary.appendChild(make("dt", null, f.label));
+        summary.appendChild(make("dd", null, v));
+      });
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      setError(error, "");
+
+      var lock = guardEnabled() && readLock();
+      if (lock) { showLocked(lock); return; }
+
+      checkContact(form);
+      var invalid = form.querySelector(".field__input:invalid");
+      form.classList.add("was-validated");
+      if (invalid) {
+        invalid.focus();
+        setError(error, errorFor(invalid));
+        return;
+      }
+      pending = collect();
+      renderSummary(pending);
+      setError(reviewError, "");
+      show(review);
+      review.focus({ preventScroll: true });
+      review.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    });
+
+    reviewActs.secondary.addEventListener("click", function () {
+      show(form);
+      var first = form.querySelector(".field__input");
+      if (first) first.focus();
+    });
+
+    if (switchBtn) {
+      switchBtn.addEventListener("click", function () {
+        carry = pending;
+        showPicker(key);
+      });
+    }
+
+    reviewActs.primary.addEventListener("click", function () {
+      var btn = reviewActs.primary;
+      if (btn.classList.contains("is-sending") || !pending) return;
+      setError(reviewError, "");
+
+      var lock = guardEnabled() && readLock();
+      if (lock) { showLocked(lock); return; }
+
+      // bot: wypełnione ukryte pole albo formularz wysłany nienaturalnie szybko
+      var minMs = (guard.minSeconds == null ? 4 : guard.minSeconds) * 1000;
+      if (trap.value || Date.now() - shownAt < minMs) {
+        show(done);
+        return;
+      }
+      if (!w3f.accessKey) {
+        setError(reviewError, "Formularz będzie aktywny już wkrótce — napisz na Instagramie 💪");
+        return;
+      }
+
+      var data = { Formularz: def.title };
+      Object.keys(pending).forEach(function (k) { data[k] = pending[k]; });
       data.access_key = w3f.accessKey;
       data.subject = fillTemplate(def.subject || "Nowa wiadomość ze strony — {name}", data);
       data.from_name = w3f.fromName || document.title;
       if (data.email) data.replyto = data.email;
 
-      form.classList.add("is-sending");
-      submit.disabled = true;
+      btn.classList.add("is-sending");
+      btn.disabled = true;
 
       fetch(form.action, {
         method: "POST",
@@ -441,32 +625,46 @@
         .then(function (r) { return r.json().catch(function () { return {}; }); })
         .then(function (res) {
           if (!res.success) throw new Error(res.message || "error");
-          reset();
-          form.hidden = true;
-          done.hidden = false;
+          if (guardEnabled()) writeLock(def.title);
+          form.reset();
+          form.classList.remove("was-validated");
+          pending = null;
+          show(done);
           done.focus({ preventScroll: true });
+          refreshAll();
         })
         .catch(function () {
-          setError("Nie udało się wysłać. Spróbuj ponownie za chwilę albo napisz na Instagramie.");
+          setError(reviewError, "Nie udało się wysłać. Spróbuj ponownie za chwilę albo napisz na Instagramie.");
         })
         .then(function () {
-          form.classList.remove("is-sending");
-          submit.disabled = false;
+          btn.classList.remove("is-sending");
+          btn.disabled = false;
         });
     });
 
-    again.addEventListener("click", function () {
-      reset();
-      var first = form.querySelector(".field__input");
-      if (first) first.focus();
-    });
+    function prefill(data) {
+      if (!data) return;
+      ["name", "email", "Telefon"].forEach(function (k) {
+        var input = form.querySelector('[name="' + k + '"]');
+        if (input && data[k] && !input.value) input.value = data[k];
+      });
+    }
 
-    return { root: wrap, form: form, done: done, titleId: titleId, reset: reset };
+    function backToForm() {
+      if (!review.hidden) show(form);
+    }
+
+    refresh();
+    return { root: wrap, titleId: titleId, refresh: refresh, prefill: prefill, backToForm: backToForm };
   }
 
   function getForm(key) {
     if (!built[key] && forms[key]) built[key] = buildForm(key, forms[key]);
     return built[key];
+  }
+
+  function refreshAll() {
+    Object.keys(built).forEach(function (k) { built[k].refresh(); });
   }
 
   /* Formularz w treści strony (sekcja „Formularz”) */
@@ -479,33 +677,106 @@
     $("contactMount").appendChild(getForm(inlineKey).root);
   }
 
-  /* Formularze w wysuwanym panelu (karty usług) */
+  /* Formularze w wysuwanym panelu (karty usług):
+     krok 1 — potwierdzenie wyboru formularza, krok 2 — formularz i sprawdzenie */
   var sheet = $("sheet");
-  var sheetKey = null;
   var sheetReturn = null;
+  var carry = null;
 
   function isSheetForm(key) {
     return !!(key && key !== inlineKey && forms[key] && forms[key].show !== false);
   }
 
+  function sheetKeys() {
+    return Object.keys(forms).filter(isSheetForm);
+  }
+
+  function mountInSheet(node, labelId) {
+    var body = $("sheetBody");
+    body.textContent = "";
+    body.appendChild(node);
+    var panel = sheet.querySelector(".sheet__panel");
+    panel.setAttribute("aria-labelledby", labelId);
+    panel.scrollTop = 0;
+    setTimeout(function () { panel.focus({ preventScroll: true }); }, 60);
+  }
+
+  function showPicker(key) {
+    var def = forms[key];
+    var lock = guardEnabled() && readLock();
+    var box = make("div", "picker");
+    var titleId = "picker-title-" + (++uid);
+
+    box.appendChild(make("p", "contact__label", "Krok 1 z 2 · Potwierdź wybór"));
+    var h = make("h3", "contact__title picker__q", "Czy to formularz, którego szukasz?");
+    h.id = titleId;
+    box.appendChild(h);
+
+    var chosen = make("div", "picker__chosen");
+    var ic = make("span", "card__icon");
+    ic.innerHTML = icon(def.icon || "chat");
+    var txt = make("div");
+    txt.appendChild(make("p", "picker__title", def.title));
+    if (def.subtitle) txt.appendChild(make("p", "contact__sub", def.subtitle));
+    chosen.appendChild(ic);
+    chosen.appendChild(txt);
+    box.appendChild(chosen);
+
+    var acts = actions("Tak, przejdź do formularza", "Anuluj");
+    acts.primary.querySelector(".contact__spinner").remove();
+    box.appendChild(acts.row);
+    acts.primary.addEventListener("click", function () { showSheetForm(key); });
+    acts.secondary.addEventListener("click", closeSheet);
+
+    var others = sheetKeys().filter(function (k) { return k !== key; });
+    if (others.length) {
+      box.appendChild(make("p", "contact__label picker__or", "Albo wybierz inny formularz"));
+      var list = make("div", "picker__list");
+      others.forEach(function (k) {
+        var o = forms[k];
+        var btn = make("button", "picker__option");
+        btn.type = "button";
+        var oi = make("span", "picker__option-icon");
+        oi.innerHTML = icon(o.icon || "chat");
+        btn.appendChild(oi);
+        btn.appendChild(make("span", null, o.title));
+        var arrow = make("span", "picker__option-arrow");
+        arrow.innerHTML = icon("arrow");
+        btn.appendChild(arrow);
+        btn.addEventListener("click", function () {
+          try { history.replaceState(null, "", "#" + k); } catch (e) { /* file:// */ }
+          showPicker(k);
+        });
+        list.appendChild(btn);
+      });
+      box.appendChild(list);
+    }
+
+    if (lock) {
+      var note = make("p", "picker__note", "Masz już wysłane zgłoszenie — kolejne nie zostanie przyjęte.");
+      box.insertBefore(note, chosen);
+    }
+
+    mountInSheet(box, titleId);
+  }
+
+  function showSheetForm(key) {
+    var f = getForm(key);
+    f.refresh();
+    f.backToForm();
+    f.prefill(carry);
+    carry = null;
+    mountInSheet(f.root, f.titleId);
+  }
+
   function openSheet(key) {
     if (!isSheetForm(key)) return false;
-    var f = getForm(key);
-    var body = $("sheetBody");
-    if (sheetKey !== key) {
-      body.textContent = "";
-      body.appendChild(f.root);
-      sheetKey = key;
-    }
-    if (!f.done.hidden) f.reset();
-    sheetReturn = document.activeElement;
-    sheet.querySelector(".sheet__panel").setAttribute("aria-labelledby", f.titleId);
-    sheet.querySelector(".sheet__panel").scrollTop = 0;
+    if (!sheet.classList.contains("is-active")) sheetReturn = document.activeElement;
+    showPicker(key);
     sheet.classList.add("is-active");
     sheet.setAttribute("aria-hidden", "false");
     document.body.classList.add("is-sheet");
     try { history.replaceState(null, "", "#" + key); } catch (e) { /* file:// */ }
-    setTimeout(function () { sheet.querySelector(".sheet__panel").focus({ preventScroll: true }); }, 60);
     return true;
   }
 
@@ -514,6 +785,7 @@
     sheet.classList.remove("is-active");
     sheet.setAttribute("aria-hidden", "true");
     document.body.classList.remove("is-sheet");
+    carry = null;
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* file:// */ }
     if (sheetReturn && sheetReturn.focus) sheetReturn.focus({ preventScroll: true });
   }

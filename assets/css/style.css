@@ -473,6 +473,97 @@ textarea.field__input { resize: vertical; min-height: 112px; }
 .contact__check circle { stroke: var(--gold); stroke-width: 2; stroke-dasharray: 151; stroke-dashoffset: 151; animation: draw 0.7s var(--ease) forwards; }
 .contact__check path { stroke: var(--gold-hi); stroke-width: 3.5; stroke-dasharray: 36; stroke-dashoffset: 36; animation: draw 0.45s 0.55s var(--ease) forwards; }
 
+/* ---------- Kroki formularza: potwierdzenie i sprawdzenie ---------- */
+.form-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.form-actions .contact__submit { margin-top: 0; }
+.form-back,
+.form-link {
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  transition: color 0.25s, border-color 0.25s;
+}
+.form-back:hover { color: var(--text); border-color: var(--muted); }
+.form-link { min-height: 0; margin-top: 14px; padding: 6px; border: 0; color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
+.form-link:hover { color: var(--gold-hi); }
+.form-back:focus-visible, .form-link:focus-visible, .picker__option:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+.form-review { outline: none; animation: rise 0.45s var(--ease) both; display: flex; flex-direction: column; }
+.form-review[hidden] { display: none; }
+.form-review__head .contact__title { margin-bottom: 14px; font-size: 1.2rem; }
+.form-review__form {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(217, 168, 78, 0.35);
+  background: rgba(217, 168, 78, 0.08);
+}
+.form-review__form-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.form-review__form-row { display: flex; align-items: center; gap: 10px; color: var(--gold-hi); font-size: 1.02rem; }
+.form-review__form-icon svg { width: 20px; height: 20px; display: block; }
+.form-review__list {
+  margin: 16px 0;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.form-review__list dt {
+  padding: 10px 14px 0;
+  font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);
+  border-top: 1px solid var(--line);
+}
+.form-review__list dt:first-child { border-top: 0; }
+.form-review__list dd { margin: 2px 0 0; padding: 0 14px 10px; color: var(--text); overflow-wrap: anywhere; white-space: pre-wrap; }
+.form-review .contact__error { margin-bottom: 12px; }
+
+.picker { display: flex; flex-direction: column; outline: none; animation: rise 0.45s var(--ease) both; }
+.picker__q { margin: 0 44px 16px 0; font-size: 1.2rem; }
+.picker__chosen {
+  display: flex; align-items: flex-start; gap: 14px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(217, 168, 78, 0.45);
+  background: linear-gradient(180deg, rgba(217, 168, 78, 0.12), rgba(217, 168, 78, 0.04));
+  box-shadow: 0 14px 30px -20px rgba(217, 168, 78, 0.6);
+}
+.picker__title { font-weight: 600; font-size: 1.05rem; color: var(--gold-hi); margin-bottom: 2px; }
+.picker__or { margin-top: 22px; }
+.picker__list { display: flex; flex-direction: column; gap: 8px; }
+.picker__option {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: left;
+  font-size: 0.95rem;
+  transition: border-color 0.25s, background 0.25s;
+}
+.picker__option:hover { border-color: rgba(217, 168, 78, 0.45); background: rgba(217, 168, 78, 0.06); }
+.picker__option > span:nth-child(2) { flex: 1; }
+.picker__option-icon, .picker__option-arrow { display: grid; place-items: center; color: var(--gold); }
+.picker__option-icon svg { width: 20px; height: 20px; }
+.picker__option-arrow { color: var(--muted); }
+.picker__option-arrow svg { width: 16px; height: 16px; }
+.picker__note {
+  margin-bottom: 14px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(217, 168, 78, 0.3);
+  background: rgba(217, 168, 78, 0.07);
+  color: var(--gold-hi);
+  font-size: 0.86rem;
+}
+
+.contact__lock { width: 54px; height: 54px; margin-bottom: 8px; color: var(--gold); stroke-width: 1.6; }
+.contact__done--locked .contact__sub { max-width: 40ch; }
+
 /* ---------- Wysuwany panel z formularzem ---------- */
 .sheet {
   position: fixed; inset: 0; z-index: 80;

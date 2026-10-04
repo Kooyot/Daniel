@@ -85,6 +85,17 @@ window.SITE_CONFIG = {
     successText: "Dzięki — odezwę się najszybciej, jak to możliwe.",
   },
 
+  // Ochrona przed spamem (działa w przeglądarce):
+  // • jedna osoba (urządzenie/przeglądarka) = jedno zgłoszenie na lockHours godzin (0 = na zawsze)
+  // • ukryte pole-pułapka na boty i minimalny czas wypełniania formularza
+  // • e-mail i telefon są obowiązkowe w każdym formularzu
+  antispam: {
+    onePerPerson: true,
+    lockHours: 24,
+    minSeconds: 4,
+    lockedText: "Jedna osoba może wysłać jedno zgłoszenie — odezwę się do Ciebie. Jeśli chcesz coś dodać, napisz na Instagramie.",
+  },
+
   /* Każdy formularz:
      • klucz (np. online) = adres linku: "#online" w links otwiera ten formularz,
        działa też bezpośredni link: twojadomena.pl/#online
@@ -108,7 +119,7 @@ window.SITE_CONFIG = {
         { label: "Temat", type: "choice", options: ["Pytanie", "Współpraca / reklama", "Inne"] },
         { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
         { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
-        { label: "Telefon", type: "tel", half: true, autocomplete: "tel", placeholder: "+48 …" },
+        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
         { label: "Wiadomość", type: "textarea", required: true, placeholder: "W czym mogę pomóc?" },
       ],
     },
@@ -122,7 +133,7 @@ window.SITE_CONFIG = {
       fields: [
         { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
         { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
-        { label: "Telefon", type: "tel", half: true, autocomplete: "tel", placeholder: "+48 …" },
+        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
         { label: "Twój cel", type: "choice", options: ["Redukcja", "Budowa masy", "Rekompozycja", "Siła", "Zdrowie i forma"] },
         { label: "Doświadczenie", type: "choice", options: ["Początkujący", "Średniozaawansowany", "Zaawansowany"] },
         { label: "Ile dni w tygodniu możesz trenować?", type: "choice", options: ["2", "3", "4", "5+"] },
@@ -154,11 +165,11 @@ window.SITE_CONFIG = {
       subtitle: "Porozmawiajmy o Twoim celu — trening, dieta, plan działania.",
       icon: "calendar",
       button: "Umów konsultację",
-      subject: "Konsultacja ({Forma konsultacji}) — {name}",
+      subject: "Konsultacja: {Forma konsultacji} — {name}",
       fields: [
         { key: "name", label: "Imię", type: "text", required: true, autocomplete: "given-name", placeholder: "Jak masz na imię?" },
         { key: "email", label: "E-mail", type: "email", required: true, half: true, autocomplete: "email", placeholder: "ty@przyklad.pl" },
-        { label: "Telefon", type: "tel", half: true, autocomplete: "tel", placeholder: "+48 …" },
+        { label: "Telefon", type: "tel", required: true, half: true, autocomplete: "tel", placeholder: "+48 …" },
         { label: "Forma konsultacji", type: "choice", options: ["Online (wideo)", "Na sali", "Telefonicznie"] },
         { label: "Temat", type: "multi", options: ["Trening", "Dieta", "Suplementacja", "Przygotowanie do zawodów", "Inne"] },
         { label: "Z czym przychodzisz?", type: "textarea", required: true, placeholder: "Opisz krótko swoją sytuację i cel." },
