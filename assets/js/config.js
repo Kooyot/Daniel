@@ -14,14 +14,14 @@ window.SITE_CONFIG = {
     lastName: "Staszak",
     handle: "@danielstaszak_",
     role: "Trener personalny · Kulturysta",
-    bio: "15 lat na siłowni. Zjadłem na niej zęby — teraz pomagam Ci zbudować formę bez dróg na skróty.",
+    bio: "12 lat na siłowni. Zjadłem na niej zęby — teraz pomagam Ci zbudować formę bez dróg na skróty.",
     // Ścieżka do zdjęcia, np. "assets/img/daniel.jpg". Puste = monogram „DS”.
     avatar: "assets/img/daniel.jpg",
     status: { show: true, text: "Przyjmuję nowych podopiecznych" },
   },
 
   stats: [
-    { value: "15+", label: "lat na siłowni" },
+    { value: "12+", label: "lat na siłowni" },
     { value: "1:1", label: "treningi personalne" },
     { value: "Online", label: "prowadzenie" },
   ],
@@ -29,7 +29,7 @@ window.SITE_CONFIG = {
   socials: [
     { icon: "instagram", label: "Instagram", url: "https://www.instagram.com/danielstaszak_/" },
     { icon: "tiktok", label: "TikTok", url: "https://www.tiktok.com/@danielstaszak_" },
-    { icon: "youtube", label: "YouTube", url: "#" },
+    { icon: "youtube", label: "YouTube", url: "https://www.youtube.com/@DanielStaszak99" },
     { icon: "facebook", label: "Facebook", url: "#" },
     { icon: "mail", label: "E-mail", url: "mailto:kontakt@danielstaszak.pl" },
   ],
@@ -65,7 +65,7 @@ window.SITE_CONFIG = {
       url: "https://www.instagram.com/danielstaszak_/",
     },
     { title: "TikTok", subtitle: "@danielstaszak_ · krótkie porady treningowe", icon: "tiktok", url: "https://www.tiktok.com/@danielstaszak_" },
-    { title: "YouTube", subtitle: "Pełne treningi i vlogi", icon: "youtube", url: "#" },
+    { title: "YouTube", subtitle: "@DanielStaszak99 · pełne treningi i vlogi", icon: "youtube", url: "https://www.youtube.com/@DanielStaszak99" },
 
     { type: "heading", text: "Kontakt" },
     {
